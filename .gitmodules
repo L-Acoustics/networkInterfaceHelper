@@ -1,0 +1,9 @@
+[submodule "scripts/bashUtils"]
+	path = scripts/bashUtils
+	url = https://github.com/christophe-calmejane/bashUtils.git
+[submodule "cmake/cmakeUtils"]
+	path = cmake/cmakeUtils
+	url = https://github.com/christophe-calmejane/cmakeUtils.git
+[submodule "externals/3rdparty/gtest"]
+	path = externals/3rdparty/gtest
+	url = https://github.com/google/googletest.git
