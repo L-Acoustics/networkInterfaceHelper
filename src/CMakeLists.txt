@@ -53,6 +53,11 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "iOS")
 		networkInterfaceHelper_ios.mm
 	)
 	list(APPEND ADD_LINK_LIBS "-framework Foundation -framework SystemConfiguration")
+elseif(CMAKE_SYSTEM_NAME MATCHES "Android")
+	set (SOURCE_FILES_OS_DEPENDENT
+		# Use the unix version for now, only interface type seems to be missing 
+		networkInterfaceHelper_unix.cpp
+	)
 else()
 	message(FATAL_ERROR "Network helper undefined for system: ${CMAKE_SYSTEM_NAME}")
 endif()
