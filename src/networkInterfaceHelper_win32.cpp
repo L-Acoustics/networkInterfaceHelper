@@ -38,6 +38,10 @@
 
 #include "networkInterfaceHelper_common.hpp"
 
+#ifndef _MBCS
+#	error "Multi-Byte Character Set required"
+#endif
+
 #include <memory>
 #include <cstdint> // std::uint8_t
 #include <cstring> // memcpy
