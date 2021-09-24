@@ -236,6 +236,12 @@ public:
 		}
 	}
 
+	// Deleted compiler auto-generated methods
+	NetworkInterfaceHelperImpl(NetworkInterfaceHelperImpl const&) = delete;
+	NetworkInterfaceHelperImpl(NetworkInterfaceHelperImpl&&) = delete;
+	NetworkInterfaceHelperImpl& operator=(NetworkInterfaceHelperImpl const&) = delete;
+	NetworkInterfaceHelperImpl& operator=(NetworkInterfaceHelperImpl&&) = delete;
+
 private:
 	// CommonDelegate overrides
 	/** When the list of interfaces changed */
