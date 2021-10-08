@@ -148,7 +148,8 @@ private:
 				auto const locatorGuard = ComObjectGuard{ locator };
 
 				auto* service = static_cast<IWbemServices*>(nullptr);
-				if (SUCCEEDED(locator->ConnectServer(L"root\\StandardCimv2", NULL, NULL, NULL, WBEM_FLAG_CONNECT_USE_MAX_WAIT, NULL, NULL, &service)))
+				auto serverName = BStrGuard{ L"root\\StandardCimv2" };
+				if (SUCCEEDED(locator->ConnectServer(serverName.getString(), NULL, NULL, NULL, WBEM_FLAG_CONNECT_USE_MAX_WAIT, NULL, NULL, &service)))
 				{
 					auto const serviceGuard = ComObjectGuard{ service };
 
@@ -156,7 +157,9 @@ private:
 					if (SUCCEEDED(CoSetProxyBlanket(service, RPC_C_AUTHN_DEFAULT, RPC_C_AUTHZ_DEFAULT, COLE_DEFAULT_PRINCIPAL, RPC_C_AUTHN_LEVEL_DEFAULT, RPC_C_IMP_LEVEL_IMPERSONATE, COLE_DEFAULT_AUTHINFO, EOAC_DEFAULT)))
 					{
 						auto* adapterEnumerator = static_cast<IEnumWbemClassObject*>(nullptr);
-						if (SUCCEEDED(service->ExecQuery(L"WQL", L"SELECT * FROM MSFT_NetAdapter", WBEM_FLAG_FORWARD_ONLY, NULL, &adapterEnumerator)))
+						auto languageName = BStrGuard{ L"WQL" };
+						auto query = BStrGuard{ L"SELECT * FROM MSFT_NetAdapter" };
+						if (SUCCEEDED(service->ExecQuery(languageName, query, WBEM_FLAG_FORWARD_ONLY, NULL, &adapterEnumerator)))
 						{
 							auto const adapterEnumeratorGuard = ComObjectGuard{ adapterEnumerator };
 
@@ -700,6 +703,48 @@ private:
 		VARIANT* _var{ nullptr };
 	};
 
+	class BStrGuard final
+	{
+	public:
+		using value_type = wchar_t*;
+		using const_value_type = wchar_t const*;
+		explicit BStrGuard(value_type const str) noexcept
+			: _str{ SysAllocString(str) }
+		{
+		}
+		explicit BStrGuard(const_value_type const str) noexcept
+			: _str{ SysAllocString(str) }
+		{
+		}
+		~BStrGuard() noexcept
+		{
+			if (_str)
+			{
+				SysFreeString(_str);
+			}
+		}
+		value_type getString() noexcept
+		{
+			return _str;
+		}
+		const_value_type getString() const noexcept
+		{
+			return _str;
+		}
+		operator value_type() noexcept
+		{
+			return getString();
+		}
+
+		// Deleted compiler auto-generated methods
+		BStrGuard(BStrGuard const&) = delete;
+		BStrGuard(BStrGuard&&) = delete;
+		BStrGuard& operator=(BStrGuard const&) = delete;
+		BStrGuard& operator=(BStrGuard&&) = delete;
+
+	private:
+		value_type _str{ nullptr };
+	};
 
 	// Private members
 	CommonDelegate& _commonDelegate;
