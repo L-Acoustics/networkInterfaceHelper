@@ -64,9 +64,9 @@ Separate each category with an empty line feed.
 
 Example:
 ```c++
-#include "la/avdecc/avdecc.hpp"
+#include "la/networkInterfaceHelper/networkInterfaceHelper.hpp"
 
-#include "entity.hpp"
+#include "utils.hpp"
 
 #include <windows.h>
 #include <boost/boost.hpp>

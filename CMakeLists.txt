@@ -17,6 +17,7 @@ set(LA_NIH_VERSION 1.0.0)
 # Build options
 option(BUILD_NIH_EXAMPLES "Build examples." FALSE)
 option(BUILD_NIH_TESTS "Build unit tests." FALSE)
+option(BUILD_C_BINDINGS "Build C Bindings." FALSE)
 option(BUILD_NIH_SWIG "Build SWIG Wrapper." FALSE)
 # Install options
 option(INSTALL_NIH_EXAMPLES "Install examples." FALSE)

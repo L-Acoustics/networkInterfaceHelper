@@ -8,7 +8,7 @@ selfFolderPath="`cd "${BASH_SOURCE[0]%/*}"; pwd -P`/" # Command to get the absol
 . "${selfFolderPath}scripts/bashUtils/utils.sh"
 
 # Override default cmake options
-cmake_opt="-DBUILD_NIH_EXAMPLES=TRUE -DBUILD_NIH_TESTS=TRUE -DINSTALL_NIH_EXAMPLES=TRUE -DINSTALL_NIH_TESTS=TRUE -DENABLE_CODE_SIGNING=FALSE"
+cmake_opt="-DBUILD_NIH_EXAMPLES=TRUE -DBUILD_NIH_TESTS=TRUE -DBUILD_C_BINDINGS=TRUE -DINSTALL_NIH_EXAMPLES=TRUE -DINSTALL_NIH_TESTS=TRUE -DENABLE_CODE_SIGNING=FALSE"
 
 ############################ DO NOT MODIFY AFTER THAT LINE #############
 

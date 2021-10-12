@@ -91,6 +91,11 @@ cu_setup_deploy_library(${PROJECT_NAME}_static INSTALL ${SIGN_FLAG})
 # Set headers installation rules
 cu_setup_headers_install_rules("${PUBLIC_HEADER_FILES}" "${CU_ROOT_DIR}/include")
 
+# C Bindings library
+if(BUILD_C_BINDINGS)
+	add_subdirectory(bindings/c)
+endif()
+
 # SWIG Wrapper
 if(BUILD_NIH_SWIG)
 	include(${CU_BASE_DIR}/helpers/SetupSwig.cmake REQUIRED)
