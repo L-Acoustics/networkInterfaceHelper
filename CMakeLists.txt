@@ -75,10 +75,6 @@ cu_setup_apple_minimum_versions(MACOS 10.9 IOS 11)
 
 ############ Define some variables
 
-set(TARGET_ARCH 32)
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-	set(TARGET_ARCH 64)
-endif()
 if(${INSTALL_NIH_EXAMPLES})
 	set(INSTALL_EXAMPLE_FLAG "INSTALL")
 endif()
