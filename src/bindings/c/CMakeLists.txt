@@ -32,7 +32,9 @@ target_link_libraries(${PROJECT_NAME}_static PRIVATE la_networkInterfaceHelper_s
 target_include_directories(${PROJECT_NAME}_static PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>) # Include root source directory for access to private headers
 
 # Setup install (and signing)
-cu_setup_deploy_library(${PROJECT_NAME}_static INSTALL ${SIGN_FLAG})
+cu_setup_deploy_library(${PROJECT_NAME}_static ${INSTALL_C_FLAG})
 
 # Set headers installation rules
-cu_setup_headers_install_rules("${PUBLIC_HEADER_FILES}" "${CU_ROOT_DIR}/include")
+if(INSTALL_NIH_HEADERS)
+	cu_setup_headers_install_rules("${PUBLIC_HEADER_FILES}" "${CU_ROOT_DIR}/include")
+endif()

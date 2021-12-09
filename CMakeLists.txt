@@ -22,6 +22,10 @@ option(BUILD_NIH_SWIG "Build SWIG Wrapper." FALSE)
 # Install options
 option(INSTALL_NIH_EXAMPLES "Install examples." FALSE)
 option(INSTALL_NIH_TESTS "Install unit tests." FALSE)
+option(INSTALL_NIH_LIB_STATIC "Install static library." FALSE)
+option(INSTALL_NIH_LIB_C "Install C Bindings libraries." FALSE)
+option(INSTALL_NIH_LIB_SWIG "Install swig libraries." FALSE)
+option(INSTALL_NIH_HEADERS "Install headers." FALSE)
 # Signing options
 option(ENABLE_CODE_SIGNING "Enable binaries signing." FALSE)
 
@@ -75,6 +79,15 @@ cu_setup_apple_minimum_versions(MACOS 10.9 IOS 11)
 
 ############ Define some variables
 
+if(${INSTALL_NIH_LIB_STATIC})
+	set(INSTALL_STATIC_FLAG "INSTALL")
+endif()
+if(${INSTALL_NIH_LIB_C})
+	set(INSTALL_C_FLAG "INSTALL")
+endif()
+if(${INSTALL_NIH_LIB_SWIG})
+	set(INSTALL_SWIG_FLAG "INSTALL")
+endif()
 if(${INSTALL_NIH_EXAMPLES})
 	set(INSTALL_EXAMPLE_FLAG "INSTALL")
 endif()
