@@ -45,6 +45,7 @@
 #include <vector>
 #include <cstring> // strncmp
 #include <cassert>
+#include <limits> // numeric_limits
 
 namespace la
 {
