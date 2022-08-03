@@ -38,7 +38,9 @@ set (SOURCE_FILES_COMMON
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 	set (SOURCE_FILES_OS_DEPENDENT
 		networkInterfaceHelper_win32.cpp
+		helper_win32.cpp
 	)
+	list(APPEND PUBLIC_HEADER_FILES "${CU_ROOT_DIR}/include/la/networkInterfaceHelper/windowsHelper.hpp")
 elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
 	set (SOURCE_FILES_OS_DEPENDENT
 		networkInterfaceHelper_unix.cpp
