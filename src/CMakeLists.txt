@@ -118,11 +118,12 @@ if(BUILD_NIH_SWIG)
 		# Setup common options like any other project
 		cu_setup_library_options(${SWIG_TARGET_NAME})
 
-		# Setup install (and signing)
-		cu_setup_deploy_library(${SWIG_TARGET_NAME} ${INSTALL_SWIG_FLAG} ${SIGN_FLAG})
-
 		if(${SWIG_LANG} STREQUAL "lua")
 			target_link_libraries(${SWIG_TARGET_NAME} PRIVATE liblua)
 		endif()
+
+		# Setup install (and signing)
+		cu_setup_deploy_library(${SWIG_TARGET_NAME} ${INSTALL_SWIG_FLAG} ${SIGN_FLAG})
+
 	endforeach()
 endif()

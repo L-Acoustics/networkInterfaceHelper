@@ -14,6 +14,7 @@ if [ -f "${selfFolderPath}.defaults.sh" ]; then
 	. "${selfFolderPath}.defaults.sh"
 fi
 
+# Parse variables
 gen_c=0
 gen_csharp=0
 
@@ -53,6 +54,21 @@ function extend_gc_fnc_precmake()
 		add_cmake_opt+=("-DINSTALL_NIH_LIB_SWIG=TRUE")
 		add_cmake_opt+=("-DNIH_SWIG_LANGUAGES=csharp")
 	fi
+}
+
+function boolToString()
+{
+	if [ $1 -eq 1 ]; then
+		echo "true"
+	else
+		echo "false"
+	fi
+}
+
+function extend_gc_fnc_props_summary()
+{
+	echo "| - C Bindings: $(boolToString $gen_c)"
+	echo "| - C# Bindings: $(boolToString $gen_csharp)"
 }
 
 # execute gen_cmake script from bashUtils
