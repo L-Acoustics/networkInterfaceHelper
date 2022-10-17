@@ -116,7 +116,7 @@ if(BUILD_NIH_SWIG)
 		set_property(TARGET ${SWIG_TARGET_NAME} PROPERTY SWIG_DEPENDS ${PUBLIC_HEADER_FILES})
 
 		# Setup common options like any other project
-		cu_setup_library_options(${SWIG_TARGET_NAME})
+		cu_setup_library_options(${SWIG_TARGET_NAME} ALIAS_NAME ${SWIG_LANG})
 
 		if(${SWIG_LANG} STREQUAL "lua")
 			target_link_libraries(${SWIG_TARGET_NAME} PRIVATE liblua)
