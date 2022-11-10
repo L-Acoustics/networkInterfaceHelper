@@ -2,18 +2,33 @@
 // Network Interface Helper SWIG file
 ////////////////////////////////////////
 
+%module(directors="1") la_networkInterfaceHelper
+
 %include <stl.i>
 %include <std_string.i>
 %include <stdint.i>
 %include <std_array.i>
 %include <windows.i>
+#ifdef SWIGCSHARP
+%include <arrays_csharp.i>
+#endif
 
 // Generated wrapper file needs to include our header file
 %{
     #include <la/networkInterfaceHelper/networkInterfaceHelper.hpp>
 %}
 
+#if defined(SWIGCSHARP)
+// Optimize code generation by enabling RVO
+%typemap(out, optimal="1") SWIGTYPE
+%{
+    $result = new $1_ltype(($1_ltype const&)$1);
+%}
+#endif
+
+////////////////////////////////////////
 // IPAddress
+////////////////////////////////////////
 %nspace la::networkInterface::IPAddress;
 %ignore la::networkInterface::IPAddress::IPAddress(IPAddress&&); // Ignore move constructor
 %ignore la::networkInterface::IPAddress::operator bool; // Ignore bool operator (equivalent to isValid)
@@ -55,6 +70,9 @@
         return lhs | rhs;
     }
 };
+// Enable some templates
+%template(IPAddressV4) std::array<std::uint8_t, 4>;
+%template(IPAddressV6) std::array<std::uint16_t, 8>;
 
 // Ignore IPAddressInfo
 %ignore la::networkInterface::IPAddressInfo;

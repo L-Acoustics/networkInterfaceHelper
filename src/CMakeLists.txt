@@ -105,7 +105,7 @@ if(BUILD_NIH_SWIG)
 	include(${CU_BASE_DIR}/helpers/SetupSwig.cmake REQUIRED)
 
 	set(TARGET_PREFIX networkInterfaceHelper)
-	set(SWIG_INTERFACE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/networkInterfaceHelper.i")
+	set(SWIG_INTERFACE_FILE "${CU_ROOT_DIR}/include/la/networkInterfaceHelper/networkInterfaceHelper.i")
 	cu_setup_swig_target(TARGET_NAME ${PROJECT_NAME}_static INTERFACE_FILE "${SWIG_INTERFACE_FILE}" LANGUAGES ${NIH_SWIG_LANGUAGES} SWIG_TARGET_PREFIX ${TARGET_PREFIX} REQUIRED INSTALL_SUPPORT_FILES)
 
 	# Post process generated targets
@@ -120,6 +120,9 @@ if(BUILD_NIH_SWIG)
 
 		if(${SWIG_LANG} STREQUAL "lua")
 			target_link_libraries(${SWIG_TARGET_NAME} PRIVATE liblua)
+		elseif(${SWIG_LANG} STREQUAL "python")
+			find_package(Python3 COMPONENTS Development REQUIRED)
+			target_link_libraries(${SWIG_TARGET_NAME} PRIVATE Python3::Python)
 		endif()
 
 		# Setup install (and signing)
