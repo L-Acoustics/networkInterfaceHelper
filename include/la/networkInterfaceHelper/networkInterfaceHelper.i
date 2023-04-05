@@ -8,6 +8,7 @@
 %include <std_string.i>
 %include <stdint.i>
 %include <std_array.i>
+%include <std_vector.i>
 %include <windows.i>
 #ifdef SWIGCSHARP
 %include <arrays_csharp.i>
@@ -74,14 +75,64 @@
 %template(IPAddressV4) std::array<std::uint8_t, 4>;
 %template(IPAddressV6) std::array<std::uint16_t, 8>;
 
-// Ignore IPAddressInfo
-%ignore la::networkInterface::IPAddressInfo;
-// Ignore Interface
-%ignore la::networkInterface::Interface;
+////////////////////////////////////////
+// IPAddressInfo
+////////////////////////////////////////
+%nspace la::networkInterface::IPAddressInfo;
+
+////////////////////////////////////////
+// Interface
+////////////////////////////////////////
+%nspace la::networkInterface::Interface;
+// Add Clone() method to MacAddress
+%typemap(csbase) std::array<std::uint8_t, 6> "global::System.ICloneable";
+%typemap(cscode) std::array<std::uint8_t, 6> %{
+	public object Clone()
+	{
+		var copy = new $csclassname();
+        int i = 0;
+		foreach (byte elem in this)
+		{
+			copy[i++] = elem;
+		}
+		return copy;
+	}
+%}
+// Add Clone() method to la::networkInterface::Interface
+%typemap(csbase) la::networkInterface::Interface "global::System.ICloneable";
+%typemap(cscode) la::networkInterface::Interface %{
+	public object Clone()
+	{
+		var copy = new $csclassname();
+		copy.id = this.id;
+		copy.description = this.description;
+		copy.alias = this.alias;
+		copy.macAddress = (MacAddress)this.macAddress.Clone();
+		//copy.ipAddressInfos = this.ipAddressInfos.Clone(); // Not implemented yet
+		//copy.gateways = this.gateways.Clone(); // Not implemented yet
+		copy.type = this.type;
+		copy.isEnabled = this.isEnabled;
+		copy.isConnected = this.isConnected;
+		copy.isVirtual = this.isVirtual;
+		return copy;
+	}
+%}
+
+// Enable some templates
+%template(IPAddressInfos) std::vector<la::networkInterface::IPAddressInfo>;
+%template(Gateways) std::vector<la::networkInterface::IPAddress>;
+%template(MacAddress) std::array<std::uint8_t, 6>;
+
 // Ignore MacAddressHash
 %ignore la::networkInterface::MacAddressHash;
-// Ignore NetworkInterfaceHelper
-%ignore la::networkInterface::NetworkInterfaceHelper;
+
+////////////////////////////////////////
+// NetworkInterfaceHelper
+////////////////////////////////////////
+%nspace la::networkInterface::NetworkInterfaceHelper;
+%nspace la::networkInterface::NetworkInterfaceHelper::Observer;
+%ignore la::networkInterface::NetworkInterfaceHelper::enumerateInterfaces; // Disable this method, use Observer instead
+%feature("director") la::networkInterface::NetworkInterfaceHelper::Observer;
 
 #define final // Final keyword not properly parsed by SWIG when used on a class
 %include "la/networkInterfaceHelper/networkInterfaceHelper.hpp"
