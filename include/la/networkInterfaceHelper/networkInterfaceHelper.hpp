@@ -275,6 +275,25 @@ public:
 		virtual ~Observer() noexcept;
 
 		/** Called when an Interface was added */
+		virtual void onInterfaceAdded(la::networkInterface::Interface const& intfc) noexcept = 0;
+		/** Called when an Interface was removed */
+		virtual void onInterfaceRemoved(la::networkInterface::Interface const& intfc) noexcept = 0;
+		/** Called when the isEnabled field of the specified Interface changed */
+		virtual void onInterfaceEnabledStateChanged(la::networkInterface::Interface const& intfc, bool const isEnabled) noexcept = 0;
+		/** Called when the isConnected field of the specified Interface changed */
+		virtual void onInterfaceConnectedStateChanged(la::networkInterface::Interface const& intfc, bool const isConnected) noexcept = 0;
+		/** Called when the alias field of the specified Interface changed */
+		virtual void onInterfaceAliasChanged(la::networkInterface::Interface const& intfc, std::string const& alias) noexcept = 0;
+		/** Called when the ipAddressInfos field of the specified Interface changed */
+		virtual void onInterfaceIPAddressInfosChanged(la::networkInterface::Interface const& intfc, la::networkInterface::Interface::IPAddressInfos const& ipAddressInfos) noexcept = 0;
+		/** Called when the gateways field of the specified Interface changed */
+		virtual void onInterfaceGateWaysChanged(la::networkInterface::Interface const& intfc, la::networkInterface::Interface::Gateways const& gateways) noexcept = 0;
+	};
+	/** Defaulted version of the observer base class. */
+	class DefaultedObserver : public Observer
+	{
+	public:
+		/** Called when an Interface was added */
 		virtual void onInterfaceAdded(la::networkInterface::Interface const& /*intfc*/) noexcept {}
 		/** Called when an Interface was removed */
 		virtual void onInterfaceRemoved(la::networkInterface::Interface const& /*intfc*/) noexcept {}

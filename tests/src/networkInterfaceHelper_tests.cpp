@@ -61,7 +61,7 @@ TEST(NetworkInterfaceHelper, MacAddressToString)
 */
 TEST(MANUAL_NetworkInterfaceHelper, EnumerationAfterRestart)
 {
-	class Observer final : public la::networkInterface::NetworkInterfaceHelper::Observer
+	class Observer final : public la::networkInterface::NetworkInterfaceHelper::DefaultedObserver
 	{
 	public:
 		using Interfaces = std::unordered_map<std::string, la::networkInterface::Interface>;
