@@ -19,12 +19,15 @@
     #include <la/networkInterfaceHelper/networkInterfaceHelper.hpp>
 %}
 
+// C# Specifics
 #if defined(SWIGCSHARP)
 // Optimize code generation by enabling RVO
 %typemap(out, optimal="1") SWIGTYPE
 %{
     $result = new $1_ltype(($1_ltype const&)$1);
 %}
+// Marshal all std::string as UTF8Str
+%typemap(imtype, outattributes="[return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)]", inattributes="[System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)] ") std::string, std::string const& "string"
 #endif
 
 ////////////////////////////////////////
