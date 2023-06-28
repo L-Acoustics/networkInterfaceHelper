@@ -28,6 +28,8 @@
 %}
 // Marshal all std::string as UTF8Str
 %typemap(imtype, outattributes="[return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)]", inattributes="[System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)] ") std::string, std::string const& "string"
+// Better debug display
+%typemap(csattributes) la::networkInterface::IPAddress "[System.Diagnostics.DebuggerDisplay(\"{toString()}\")]"
 #endif
 
 ////////////////////////////////////////
@@ -45,6 +47,7 @@
 %ignore operator--(IPAddress& lhs); // Redefined in %extend
 %ignore operator&(IPAddress const& lhs, IPAddress const& rhs); // Redefined in %extend
 %ignore operator|(IPAddress const& lhs, IPAddress const& rhs); // Redefined in %extend
+// Extend the class
 %extend la::networkInterface::IPAddress
 {
     IPAddress& increment()
@@ -73,6 +76,13 @@
     {
         return lhs | rhs;
     }
+#if defined(SWIGCSHARP)
+	// Provide a more native ToString() method
+	std::string ToString()
+	{
+		return static_cast<std::string>(*$self);
+	}
+#endif
 };
 // Enable some templates
 %template(IPAddressV4) std::array<std::uint8_t, 4>;
