@@ -92,7 +92,7 @@ cu_setup_deploy_library(${PROJECT_NAME}_static ${INSTALL_STATIC_FLAG})
 
 # Set headers installation rules
 if(INSTALL_NIH_HEADERS)
-	cu_setup_headers_install_rules("${PUBLIC_HEADER_FILES}" "${CU_ROOT_DIR}/include")
+	cu_setup_headers_install_rules("${PUBLIC_HEADER_FILES}" "${CU_ROOT_DIR}/include" CONFIGURATIONS Release Debug)
 endif()
 
 # C Bindings library
@@ -106,7 +106,7 @@ if(BUILD_NIH_SWIG)
 
 	set(TARGET_PREFIX ${PROJECT_NAME})
 	set(SWIG_INTERFACE_FILE "${CU_ROOT_DIR}/include/la/networkInterfaceHelper/networkInterfaceHelper.i")
-	cu_setup_swig_target(VERSION 4.2 TARGET_NAME ${PROJECT_NAME}_static INTERFACE_FILE "${SWIG_INTERFACE_FILE}" LANGUAGES ${NIH_SWIG_LANGUAGES} SWIG_TARGET_PREFIX ${TARGET_PREFIX} REQUIRED INSTALL_SUPPORT_FILES)
+	cu_setup_swig_target(VERSION 4.2 TARGET_NAME ${PROJECT_NAME}_static INTERFACE_FILE "${SWIG_INTERFACE_FILE}" LANGUAGES ${NIH_SWIG_LANGUAGES} SWIG_TARGET_PREFIX ${TARGET_PREFIX} REQUIRED INSTALL_SUPPORT_FILES INSTALL_CONFIGURATIONS Release Debug)
 
 	# Post process generated targets
 	foreach(SWIG_LANG ${NIH_SWIG_LANGUAGES})

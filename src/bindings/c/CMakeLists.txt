@@ -36,5 +36,5 @@ cu_setup_deploy_library(${PROJECT_NAME}_static ${INSTALL_C_FLAG})
 
 # Set headers installation rules
 if(INSTALL_NIH_HEADERS)
-	cu_setup_headers_install_rules("${PUBLIC_HEADER_FILES}" "${CU_ROOT_DIR}/include")
+	cu_setup_headers_install_rules("${PUBLIC_HEADER_FILES}" "${CU_ROOT_DIR}/include" CONFIGURATIONS Release Debug)
 endif()
