@@ -78,7 +78,7 @@
     }
 #if defined(SWIGCSHARP)
 	// Provide a more native ToString() method
-	std::string ToString()
+	std::string ToString() const noexcept
 	{
 		return static_cast<std::string>(*$self);
 	}
