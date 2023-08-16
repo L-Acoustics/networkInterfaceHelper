@@ -82,6 +82,11 @@
 	{
 		return static_cast<std::string>(*$self);
 	}
+	// Provide a more native Equals() method
+	bool Equals(la::networkInterface::IPAddress const& other) const noexcept
+	{
+		return *$self == other;
+	}
 #endif
 };
 // Enable some templates
