@@ -16,7 +16,7 @@
 
 // Generated wrapper file needs to include our header file
 %{
-    #include <la/networkInterfaceHelper/networkInterfaceHelper.hpp>
+		#include <la/networkInterfaceHelper/networkInterfaceHelper.hpp>
 %}
 
 // C# Specifics
@@ -24,7 +24,7 @@
 // Optimize code generation by enabling RVO
 %typemap(out, optimal="1") SWIGTYPE
 %{
-    $result = new $1_ltype(($1_ltype const&)$1);
+		$result = new $1_ltype(($1_ltype const&)$1);
 %}
 // Marshal all std::string as UTF8Str
 %typemap(imtype, outattributes="[return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)]", inattributes="[System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)] ") std::string, std::string const& "string"
@@ -50,32 +50,32 @@
 // Extend the class
 %extend la::networkInterface::IPAddress
 {
-    IPAddress& increment()
-    {
-        ++(*$self);
-        return *$self;
-    }
-    IPAddress& decrement()
-    {
-        --(*$self);
-        return *$self;
-    }
-    static IPAddress Add(IPAddress const& lhs, std::uint32_t const value)
-    {
-        return lhs + value;
-    }
-    static IPAddress Sub(IPAddress const& lhs, std::uint32_t const value)
-    {
-        return lhs - value;
-    }
-    static IPAddress And(IPAddress const& lhs, IPAddress const& rhs)
-    {
-        return lhs & rhs;
-    }
-    static IPAddress Or(IPAddress const& lhs, IPAddress const& rhs)
-    {
-        return lhs | rhs;
-    }
+		IPAddress& increment()
+		{
+				++(*$self);
+				return *$self;
+		}
+		IPAddress& decrement()
+		{
+				--(*$self);
+				return *$self;
+		}
+		static IPAddress Add(IPAddress const& lhs, std::uint32_t const value)
+		{
+				return lhs + value;
+		}
+		static IPAddress Sub(IPAddress const& lhs, std::uint32_t const value)
+		{
+				return lhs - value;
+		}
+		static IPAddress And(IPAddress const& lhs, IPAddress const& rhs)
+		{
+				return lhs & rhs;
+		}
+		static IPAddress Or(IPAddress const& lhs, IPAddress const& rhs)
+		{
+				return lhs | rhs;
+		}
 #if defined(SWIGCSHARP)
 	// Provide a more native ToString() method
 	std::string ToString() const noexcept
