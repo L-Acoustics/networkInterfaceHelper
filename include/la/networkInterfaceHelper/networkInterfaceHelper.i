@@ -102,39 +102,27 @@
 // Interface
 ////////////////////////////////////////
 %nspace la::networkInterface::Interface;
-// Add Clone() method to MacAddress
-%typemap(csbase) std::array<std::uint8_t, 6> "global::System.ICloneable";
-%typemap(cscode) std::array<std::uint8_t, 6> %{
-	public object Clone()
+// Extend the struct
+%extend la::networkInterface::Interface
+{
+	// Add default constructor
+	Interface()
 	{
-		var copy = new $csclassname();
-        int i = 0;
-		foreach (byte elem in this)
-		{
-			copy[i++] = elem;
-		}
-		return copy;
+		return new la::networkInterface::Interface();
 	}
-%}
-// Add Clone() method to la::networkInterface::Interface
-%typemap(csbase) la::networkInterface::Interface "global::System.ICloneable";
-%typemap(cscode) la::networkInterface::Interface %{
-	public object Clone()
+	// Add a copy-constructor
+	Interface(la::networkInterface::Interface const& other)
 	{
-		var copy = new $csclassname();
-		copy.id = this.id;
-		copy.description = this.description;
-		copy.alias = this.alias;
-		copy.macAddress = (MacAddress)this.macAddress.Clone();
-		//copy.ipAddressInfos = this.ipAddressInfos.Clone(); // Not implemented yet
-		//copy.gateways = this.gateways.Clone(); // Not implemented yet
-		copy.type = this.type;
-		copy.isEnabled = this.isEnabled;
-		copy.isConnected = this.isConnected;
-		copy.isVirtual = this.isVirtual;
-		return copy;
+		return new la::networkInterface::Interface(other);
 	}
-%}
+#if defined(SWIGCSHARP)
+	// Provide a more native Equals() method
+	bool Equals(la::networkInterface::Interface const& other) const noexcept
+	{
+		return $self->id == other.id && $self->description == other.description && $self->alias == other.alias && $self->macAddress == other.macAddress && $self->ipAddressInfos == other.ipAddressInfos && $self->gateways == other.gateways && $self->type == other.type && $self->isEnabled == other.isEnabled && $self->isConnected == other.isConnected && $self->isVirtual == other.isVirtual;
+	}
+#endif
+};
 
 // Enable some templates
 %template(IPAddressInfos) std::vector<la::networkInterface::IPAddressInfo>;
