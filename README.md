@@ -1,6 +1,6 @@
 # LA Network Interface Helper Library
 
-Copyright (C) 2016-2022, L-Acoustics
+Copyright (C) 2016-2023, L-Acoustics
 
 ## What is LA_networkInterfaceHelper
 LA_networkInterfaceHelper is a lightweight open source library for enumerating Network Interfaces and monitoring any state change.
@@ -17,7 +17,7 @@ This software is licensed under the BSD 3-clause License (see [LICENSE](LICENSE)
 ## Minimum requirements for compilation
 
 ### All platforms
-- CMake 3.18.3
+- CMake 3.22
 
 ### Windows
 - Windows 10
@@ -26,10 +26,10 @@ This software is licensed under the BSD 3-clause License (see [LICENSE](LICENSE)
 
 ### macOS
 - macOS 10.12
-- Xcode 10
+- Xcode 12
 
 ### Linux
-- C++17 compliant compiler (minimum recommended g++ 8.2.1)
+- C++17 compliant compiler (minimum recommended g++ 11.2.0)
 - Make
 
 ### Optional dependencies:

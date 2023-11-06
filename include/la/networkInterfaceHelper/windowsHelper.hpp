@@ -32,41 +32,36 @@
 */
 
 /**
-* @file exports.h
+* @file windowsHelper.hpp
 * @author Christophe Calmejane
-* @brief OS specific defines for importing and exporting dynamic symbols.
+* @brief Windows specific helper.
 */
 
 #pragma once
 
-#ifdef __cplusplus
-#	define LA_NIH_CPP_EXPORT extern "C"
-#else // !__cplusplus
-#	define LA_NIH_CPP_EXPORT
-#endif // __cplusplus
+#include <string>
 
-#ifdef _WIN32
-
-#	define LA_NIH_BINDINGS_C_CALL_CONVENTION __stdcall
-
-#	if defined(la_networkInterfaceHelper_c_EXPORTS)
-#		define LA_NIH_BINDINGS_C_API LA_NIH_CPP_EXPORT __declspec(dllexport)
-#	elif defined(la_networkInterfaceHelper_c_static_STATICS)
-#		define LA_NIH_BINDINGS_C_API LA_NIH_CPP_EXPORT
-#	else
-#		define LA_NIH_BINDINGS_C_API LA_NIH_CPP_EXPORT __declspec(dllimport)
-#	endif
-
-#else // !_WIN32
-
-#	define LA_NIH_BINDINGS_C_CALL_CONVENTION
-
-#	if defined(la_networkInterfaceHelper_c_EXPORTS)
-#		define LA_NIH_BINDINGS_C_API LA_NIH_CPP_EXPORT __attribute__((visibility("default")))
-#	elif defined(la_networkInterfaceHelper_c_static_STATICS)
-#		define LA_NIH_BINDINGS_C_API LA_NIH_CPP_EXPORT
-#	else
-#		define LA_NIH_BINDINGS_C_API LA_NIH_CPP_EXPORT __attribute__((visibility("default")))
-#	endif
-
+#if defined(_WIN32)
+#	if !defined(_NATIVE_WCHAR_T_DEFINED)
+#		error "NetworkInterfaceHelper requires _NATIVE_WCHAR_T_DEFINED to be defined"
+#	endif // _NATIVE_WCHAR_T_DEFINED
 #endif // _WIN32
+
+namespace la
+{
+namespace networkInterface
+{
+#if defined(_WIN32)
+namespace windows
+{
+/** Converts a string from UTF8 encoding to WideChar encoding. Throws std::invalid_argument if conversion cannot be achieved. */
+std::wstring utf8ToWideChar(std::string const& str);
+
+/** Converts a string from WideChar encoding to UTF8 encoding. You may provide a size hint for conversion or 0 for automatic). Throws std::invalid_argument if conversion cannot be achieved. */
+std::string wideCharToUtf8(std::wstring const& str, size_t const sizeHint = 0);
+
+} // namespace windows
+#endif // _WIN32
+
+} // namespace networkInterface
+} // namespace la

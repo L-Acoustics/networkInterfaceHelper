@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2022, L-Acoustics
+* Copyright (C) 2016-2023, L-Acoustics
 
 * This file is part of LA_networkInterfaceHelper.
 
@@ -50,6 +50,7 @@ namespace internals
 std::string const applicationShortName{ "@PROJECT_NAME@" };
 std::string const applicationLongName{ "@CU_PROJECT_FULL_NAME@" };
 std::string const companyName{ "@CU_COMPANY_NAME@" };
+std::string const companyDomain{ "@CU_COMPANY_DOMAIN@" };
 std::string const companyURL{ "@CU_COMPANY_URL@" };
 std::string const projectContact{ "@CU_PROJECT_CONTACT@" };
 std::string const versionString{ "@CU_PROJECT_FRIENDLY_VERSION@" }; // Friendly version (3 digits for release, 3 digits and beta postfix for beta)

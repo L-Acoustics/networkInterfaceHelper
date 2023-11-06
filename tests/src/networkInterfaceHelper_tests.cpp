@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2022, L-Acoustics
+* Copyright (C) 2016-2023, L-Acoustics
 
 * This file is part of LA_networkInterfaceHelper.
 
@@ -61,7 +61,7 @@ TEST(NetworkInterfaceHelper, MacAddressToString)
 */
 TEST(MANUAL_NetworkInterfaceHelper, EnumerationAfterRestart)
 {
-	class Observer final : public la::networkInterface::NetworkInterfaceHelper::Observer
+	class Observer final : public la::networkInterface::NetworkInterfaceHelper::DefaultedObserver
 	{
 	public:
 		using Interfaces = std::unordered_map<std::string, la::networkInterface::Interface>;

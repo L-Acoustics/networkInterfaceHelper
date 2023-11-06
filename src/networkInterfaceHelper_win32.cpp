@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2022, L-Acoustics
+* Copyright (C) 2016-2023, L-Acoustics
 
 * This file is part of LA_networkInterfaceHelper.
 
@@ -36,6 +36,7 @@
 * @author Christophe Calmejane
 */
 
+#include "la/networkInterfaceHelper/windowsHelper.hpp"
 #include "networkInterfaceHelper_common.hpp"
 
 #include <memory>
@@ -74,23 +75,15 @@ namespace networkInterface
 {
 static std::string wideCharToUTF8(PWCHAR const wide) noexcept
 {
-	// All APIs calling this method have to provide a NULL-terminated PWCHAR
-	auto const wideLength = wcsnlen_s(wide, 1024); // Compute the size, in characters, of the wide string
-
-	if (wideLength != 0)
+	try
 	{
-		auto const sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, wide, static_cast<int>(wideLength), nullptr, 0, nullptr, nullptr);
-		auto result = std::string(static_cast<std::string::size_type>(sizeNeeded), std::string::value_type{ 0 }); // Brace-initialization constructor prevents the use of {}
-
-		if (WideCharToMultiByte(CP_UTF8, 0, wide, static_cast<int>(wideLength), result.data(), sizeNeeded, nullptr, nullptr) > 0)
-		{
-			return result;
-		}
+		return windows::wideCharToUtf8(wide);
 	}
-
-	return {};
+	catch (std::invalid_argument const&)
+	{
+		return {};
+	}
 }
-
 
 class OsDependentDelegate_Win32 final : public OsDependentDelegate
 {

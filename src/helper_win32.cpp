@@ -32,30 +32,58 @@
 */
 
 /**
- * @file libraryInfo.cpp
- * @author Christophe Calmejane
- */
+* @file helper_win32.cpp
+* @author Christophe Calmejane
+*/
 
-#include "config.hpp"
+#include "la/networkInterfaceHelper/windowsHelper.hpp"
+
+#include <Windows.h>
+
+#include <stdexcept> // invalid_argument
 
 namespace la
 {
 namespace networkInterface
 {
-std::string getLibraryVersion() noexcept
+namespace windows
 {
-	return internals::versionString;
+std::wstring utf8ToWideChar(std::string const& str)
+{
+	auto const sizeHint = str.size(); // WideChar size cannot exceed the number of multi-bytes
+	auto result = std::wstring(static_cast<std::wstring::size_type>(sizeHint), std::wstring::value_type{ 0 }); // Brace-initialization constructor prevents the use of {}
+
+	// Try to convert
+	auto const convertedLength = MultiByteToWideChar(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), result.data(), static_cast<int>(sizeHint));
+	if (convertedLength == 0 || static_cast<size_t>(convertedLength) > sizeHint)
+	{
+		throw std::invalid_argument("Failed to convert from MultiByte to WideChar");
+	}
+
+	// Adjust size
+	result.resize(convertedLength);
+
+	return result;
 }
 
-std::string getLibraryName() noexcept
+std::string wideCharToUtf8(std::wstring const& str, size_t const sizeHint)
 {
-	return internals::applicationLongName;
+	auto const maxConvertedBytes = sizeHint == 0 ? str.size() * 4 : sizeHint; // 4 MultiBytes "character" per WideChar should be enough, otherwise use the provided sizeHint
+	auto result = std::string(static_cast<std::string::size_type>(maxConvertedBytes), std::string::value_type{ 0 }); // Brace-initialization constructor prevents the use of {}
+
+	// Try to convert
+	auto const convertedLength = WideCharToMultiByte(CP_UTF8, 0, str.data(), static_cast<int>(str.size()), result.data(), static_cast<int>(result.size()), nullptr, nullptr);
+	if (convertedLength == 0 || static_cast<size_t>(convertedLength) > maxConvertedBytes)
+	{
+		throw std::invalid_argument("Failed to convert from WideChar to MultiByte");
+	}
+
+	// Adjust size
+	result.resize(convertedLength);
+
+	return result;
 }
 
-std::string getLibraryCopyright() noexcept
-{
-	return internals::readableCopyright;
-}
-
+} // namespace windows
 } // namespace networkInterface
 } // namespace la

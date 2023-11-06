@@ -38,7 +38,9 @@ set (SOURCE_FILES_COMMON
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 	set (SOURCE_FILES_OS_DEPENDENT
 		networkInterfaceHelper_win32.cpp
+		helper_win32.cpp
 	)
+	list(APPEND PUBLIC_HEADER_FILES "${CU_ROOT_DIR}/include/la/networkInterfaceHelper/windowsHelper.hpp")
 elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
 	set (SOURCE_FILES_OS_DEPENDENT
 		networkInterfaceHelper_unix.cpp
@@ -90,7 +92,7 @@ cu_setup_deploy_library(${PROJECT_NAME}_static ${INSTALL_STATIC_FLAG})
 
 # Set headers installation rules
 if(INSTALL_NIH_HEADERS)
-	cu_setup_headers_install_rules("${PUBLIC_HEADER_FILES}" "${CU_ROOT_DIR}/include")
+	cu_setup_headers_install_rules("${PUBLIC_HEADER_FILES}" "${CU_ROOT_DIR}/include" CONFIGURATIONS Release Debug)
 endif()
 
 # C Bindings library
@@ -102,9 +104,9 @@ endif()
 if(BUILD_NIH_SWIG)
 	include(${CU_BASE_DIR}/helpers/SetupSwig.cmake REQUIRED)
 
-	set(TARGET_PREFIX networkInterfaceHelper)
-	set(SWIG_INTERFACE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/networkInterfaceHelper.i")
-	cu_setup_swig_target(TARGET_NAME ${PROJECT_NAME}_static INTERFACE_FILE "${SWIG_INTERFACE_FILE}" LANGUAGES ${NIH_SWIG_LANGUAGES} SWIG_TARGET_PREFIX ${TARGET_PREFIX} REQUIRED INSTALL_SUPPORT_FILES)
+	set(TARGET_PREFIX ${PROJECT_NAME})
+	set(SWIG_INTERFACE_FILE "${CU_ROOT_DIR}/include/la/networkInterfaceHelper/networkInterfaceHelper.i")
+	cu_setup_swig_target(VERSION 4.2 TARGET_NAME ${PROJECT_NAME}_static INTERFACE_FILE "${SWIG_INTERFACE_FILE}" LANGUAGES ${NIH_SWIG_LANGUAGES} SWIG_TARGET_PREFIX ${TARGET_PREFIX} REQUIRED INSTALL_SUPPORT_FILES INSTALL_CONFIGURATIONS Release Debug)
 
 	# Post process generated targets
 	foreach(SWIG_LANG ${NIH_SWIG_LANGUAGES})
@@ -114,13 +116,17 @@ if(BUILD_NIH_SWIG)
 		set_property(TARGET ${SWIG_TARGET_NAME} PROPERTY SWIG_DEPENDS ${PUBLIC_HEADER_FILES})
 
 		# Setup common options like any other project
-		cu_setup_library_options(${SWIG_TARGET_NAME})
+		cu_setup_library_options(${SWIG_TARGET_NAME} ALIAS_NAME ${SWIG_LANG})
+
+		if(${SWIG_LANG} STREQUAL "lua")
+			target_link_libraries(${SWIG_TARGET_NAME} PRIVATE liblua)
+		elseif(${SWIG_LANG} STREQUAL "python")
+			find_package(Python3 COMPONENTS Development REQUIRED)
+			target_link_libraries(${SWIG_TARGET_NAME} PRIVATE Python3::Python)
+		endif()
 
 		# Setup install (and signing)
 		cu_setup_deploy_library(${SWIG_TARGET_NAME} ${INSTALL_SWIG_FLAG} ${SIGN_FLAG})
 
-		if(${SWIG_LANG} STREQUAL "lua")
-			target_link_libraries(${SWIG_TARGET_NAME} PRIVATE liblua)
-		endif()
 	endforeach()
 endif()
