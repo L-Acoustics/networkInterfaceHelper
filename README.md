@@ -1,6 +1,6 @@
 # LA Network Interface Helper Library
 
-Copyright (C) 2016-2022, L-Acoustics
+Copyright (C) 2016-2023, L-Acoustics
 
 ## What is LA_networkInterfaceHelper
 LA_networkInterfaceHelper is a lightweight open source library for enumerating Network Interfaces and monitoring any state change.
