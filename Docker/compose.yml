@@ -1,0 +1,6 @@
+# Includes
+include:
+  - dockerHelper/compose/builder.yml
+  - dockerHelper/compose/services.yml
+  - dockerHelper/compose/SonarQube.yml
+
