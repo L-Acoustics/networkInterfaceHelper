@@ -7,3 +7,6 @@
 [submodule "externals/3rdparty/gtest"]
 	path = externals/3rdparty/gtest
 	url = https://github.com/google/googletest.git
+[submodule "Docker/dockerHelper"]
+	path = Docker/dockerHelper
+	url = https://github.com/christophe-calmejane/dockerHelper.git

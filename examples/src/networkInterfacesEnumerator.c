@@ -74,7 +74,7 @@ static void LA_NIH_BINDINGS_C_CALL_CONVENTION on_nih_enumerate_interfaces_cb(nih
 	printf("%d: %s\n", intNum, intfc->id);
 	printf("  Description:  %s\n", intfc->description);
 	printf("  Alias:        %s\n", intfc->alias);
-	printf("  MacAddress:   %s\n", getMacAddress(&intfc->mac_address));
+	printf("  MacAddress:   %s\n", getMacAddress((nih_mac_address_cp)(&intfc->mac_address)));
 	printf("  Type:         %s\n", getInterfaceType(intfc->type));
 	printf("  Enabled:      %s\n", intfc->is_enabled ? "YES" : "NO");
 	printf("  Connected:    %s\n", intfc->is_connected ? "YES" : "NO");
@@ -106,7 +106,7 @@ static void LA_NIH_BINDINGS_C_CALL_CONVENTION on_nih_enumerate_interfaces_cb(nih
 	LA_NIH_freeNetworkInterface(intfc);
 }
 
-static int displayInterfaces()
+static int displayInterfaces(void)
 {
 	printf("Available interfaces:\n\n");
 
@@ -116,7 +116,7 @@ static int displayInterfaces()
 	return 0;
 }
 
-int main()
+int main(void)
 {
 	return displayInterfaces();
 }
