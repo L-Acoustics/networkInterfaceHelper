@@ -39,6 +39,13 @@
 #endif
 
 ////////////////////////////////////////
+// Global functions
+////////////////////////////////////////
+//%nspace la::networkInterface::getLibraryVersion; // Put into moduleName.functionName https://github.com/swig/swig/issues/591
+//%nspace la::networkInterface::getLibraryName; // Put into moduleName.functionName https://github.com/swig/swig/issues/591
+//%nspace la::networkInterface::getLibraryCopyright; // Put into moduleName.functionName https://github.com/swig/swig/issues/591
+
+////////////////////////////////////////
 // IPAddress
 ////////////////////////////////////////
 %nspace la::networkInterface::IPAddress;
