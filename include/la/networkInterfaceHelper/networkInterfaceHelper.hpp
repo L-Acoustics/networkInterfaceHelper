@@ -44,6 +44,7 @@
 #include <cstdint>
 #include <array>
 #include <functional>
+#include <utility>
 
 namespace la
 {
@@ -69,6 +70,7 @@ public:
 	using value_type_v4 = std::array<std::uint8_t, 4>; // "a.b.c.d" -> [0] = a, [1] = b, [2] = c, [3] = d
 	using value_type_v6 = std::array<std::uint16_t, 8>; // "aa::bb::cc::dd::ee::ff::gg::hh" -> [0] = aa, [1] = bb, ..., [7] = hh
 	using value_type_packed_v4 = std::uint32_t; // Packed version of an IP V4: "a.b.c.d" -> MSB = a, LSB = d
+	using value_type_packed_v6 = std::pair<std::uint64_t, std::uint64_t>; // Packed version of an IP V6: "aa::bb::cc::dd::ee::ff::gg::hh" -> first MSB = aa, first LSB = dd, second MSB = ee, second LSB = hh
 
 	enum class Type
 	{
@@ -76,6 +78,9 @@ public:
 		V4,
 		V6,
 	};
+
+	static struct CompatibleV6Tag{} CompatibleV6;
+	static struct MappedV6Tag{} MappedV6;
 
 	/** Default constructor. */
 	IPAddress() noexcept;
@@ -89,8 +94,17 @@ public:
 	/** Constructor from a value_type_packed_v4. */
 	explicit IPAddress(value_type_packed_v4 const ipv4) noexcept;
 
+	/** Constructor from a value_type_packed_v6. */
+	explicit IPAddress(value_type_packed_v6 const ipv6) noexcept;
+
 	/** Constructor from a string. */
 	explicit IPAddress(std::string const& ipString);
+
+	/** Constructor for an IPV4 compatible IP inside a V6 one. */
+	IPAddress(IPAddress const& ipv4, CompatibleV6Tag);
+
+	/** Constructor for an IPV4 mapped IP inside a V6 one. */
+	IPAddress(IPAddress const& ipv4, MappedV6Tag);
 
 	/** Destructor. */
 	~IPAddress() noexcept;
@@ -104,6 +118,9 @@ public:
 	/** Setter to change the IP value. */
 	void setValue(value_type_packed_v4 const ipv4) noexcept;
 
+	/** Setter to change the IP value. */
+	void setValue(value_type_packed_v6 const ipv6) noexcept;
+
 	/** Getter to retrieve the Type of address. */
 	Type getType() const noexcept;
 
@@ -113,11 +130,26 @@ public:
 	/** Getter to retrieve the IP value. Throws std::invalid_argument if IPAddress is not a Type::V6. */
 	value_type_v6 getIPV6() const;
 
-	/** Getter to retrieve the IP value in the packed format. Throws std::invalid_argument if IPAddress is not a Type::V6. */
+	/** Getter to retrieve the IP value in the packed format. Throws std::invalid_argument if IPAddress is not a Type::V4. */
 	value_type_packed_v4 getIPV4Packed() const;
+
+	/** Getter to retrieve the IP value in the packed format. Throws std::invalid_argument if IPAddress is not a Type::V6. */
+	value_type_packed_v6 getIPV6Packed() const;
 
 	/** True if the IPAddress contains a value, false otherwise. */
 	bool isValid() const noexcept;
+
+	/** True if the IPAddress is a V4 compatible IP inside a V6 one. */
+	bool isIPV4Compatible() const noexcept;
+
+	/** True if the IPAddress is a V4 mapped IP inside a V6 one. */
+	bool isIPV4Mapped() const noexcept;
+
+	/** Returns an IPV4 compatible IP inside a V6 one. Throws std::invalid_argument if IPAddress is not a Type::V6 or is not a V4 Compatible one. */
+	IPAddress getIPV4Compatible() const;
+
+	/** Returns an IPV4 mapped IP inside a V6 one. Throws std::invalid_argument if IPAddress is not a Type::V6 or is not a V4 Mapped one. */
+	IPAddress getIPV4Mapped() const;
 
 	/** IPV4 operator (equivalent to getIPV4()). Throws std::invalid_argument if IPAddress is not a Type::V4. */
 	explicit operator value_type_v4() const;
@@ -127,6 +159,9 @@ public:
 
 	/** IPV4 operator (equivalent to getIPV4Packed()). Throws std::invalid_argument if IPAddress is not a Type::V4. */
 	explicit operator value_type_packed_v4() const;
+
+	/** IPV6 operator (equivalent to getIPV6Packed()). Throws std::invalid_argument if IPAddress is not a Type::V6. */
+	explicit operator value_type_packed_v6() const;
 
 	/** IPAddress validity bool operator (equivalent to isValid()). */
 	explicit operator bool() const noexcept;
@@ -169,6 +204,12 @@ public:
 
 	/** Unpack an IP of Type::V4. */
 	static value_type_v4 unpack(value_type_packed_v4 const ipv4) noexcept;
+
+	/** Pack an IP of Type::V6. */
+	static value_type_packed_v6 pack(value_type_v6 const ipv6) noexcept;
+
+	/** Unpack an IP of Type::V6. */
+	static value_type_v6 unpack(value_type_packed_v6 const ipv6) noexcept;
 
 	/** Hash functor to be used for std::hash */
 	struct hash
