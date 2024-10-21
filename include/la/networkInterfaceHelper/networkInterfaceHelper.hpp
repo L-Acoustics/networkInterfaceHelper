@@ -335,19 +335,19 @@ public:
 	{
 	public:
 		/** Called when an Interface was added */
-		virtual void onInterfaceAdded(la::networkInterface::Interface const& /*intfc*/) noexcept {}
+		virtual void onInterfaceAdded(la::networkInterface::Interface const& /*intfc*/) noexcept override {}
 		/** Called when an Interface was removed */
-		virtual void onInterfaceRemoved(la::networkInterface::Interface const& /*intfc*/) noexcept {}
+		virtual void onInterfaceRemoved(la::networkInterface::Interface const& /*intfc*/) noexcept override {}
 		/** Called when the isEnabled field of the specified Interface changed */
-		virtual void onInterfaceEnabledStateChanged(la::networkInterface::Interface const& /*intfc*/, bool const /*isEnabled*/) noexcept {}
+		virtual void onInterfaceEnabledStateChanged(la::networkInterface::Interface const& /*intfc*/, bool const /*isEnabled*/) noexcept override {}
 		/** Called when the isConnected field of the specified Interface changed */
-		virtual void onInterfaceConnectedStateChanged(la::networkInterface::Interface const& /*intfc*/, bool const /*isConnected*/) noexcept {}
+		virtual void onInterfaceConnectedStateChanged(la::networkInterface::Interface const& /*intfc*/, bool const /*isConnected*/) noexcept override {}
 		/** Called when the alias field of the specified Interface changed */
-		virtual void onInterfaceAliasChanged(la::networkInterface::Interface const& /*intfc*/, std::string const& /*alias*/) noexcept {}
+		virtual void onInterfaceAliasChanged(la::networkInterface::Interface const& /*intfc*/, std::string const& /*alias*/) noexcept override {}
 		/** Called when the ipAddressInfos field of the specified Interface changed */
-		virtual void onInterfaceIPAddressInfosChanged(la::networkInterface::Interface const& /*intfc*/, la::networkInterface::Interface::IPAddressInfos const& /*ipAddressInfos*/) noexcept {}
+		virtual void onInterfaceIPAddressInfosChanged(la::networkInterface::Interface const& /*intfc*/, la::networkInterface::Interface::IPAddressInfos const& /*ipAddressInfos*/) noexcept override {}
 		/** Called when the gateways field of the specified Interface changed */
-		virtual void onInterfaceGateWaysChanged(la::networkInterface::Interface const& /*intfc*/, la::networkInterface::Interface::Gateways const& /*gateways*/) noexcept {}
+		virtual void onInterfaceGateWaysChanged(la::networkInterface::Interface const& /*intfc*/, la::networkInterface::Interface::Gateways const& /*gateways*/) noexcept override {}
 	};
 	using EnumerateInterfacesHandler = std::function<void(la::networkInterface::Interface const&)>;
 
