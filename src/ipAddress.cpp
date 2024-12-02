@@ -300,7 +300,7 @@ IPAddress::IPAddress(std::string const& ipString)
 			if (emptyTokens.has_value() && i == emptyTokens->first)
 			{
 				// Nothing to do, we are in the empty tokens range ('ip' is already 0)
-				packPosition += emptyTokens->second;
+				packPosition += static_cast<decltype(packPosition)>(emptyTokens->second);
 				continue;
 			}
 			// For the last token, check if we have an IPV4 embedded
