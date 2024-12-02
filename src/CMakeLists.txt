@@ -106,7 +106,7 @@ if(BUILD_NIH_SWIG)
 
 	set(TARGET_PREFIX ${PROJECT_NAME})
 	set(SWIG_INTERFACE_FILE "${CU_ROOT_DIR}/include/la/networkInterfaceHelper/networkInterfaceHelper.i")
-	cu_setup_swig_target(VERSION 4.2 TARGET_NAME ${PROJECT_NAME}_static INTERFACE_FILE "${SWIG_INTERFACE_FILE}" LANGUAGES ${NIH_SWIG_LANGUAGES} SWIG_TARGET_PREFIX ${TARGET_PREFIX} REQUIRED INSTALL_SUPPORT_FILES INSTALL_CONFIGURATIONS Release Debug)
+	cu_setup_swig_target(VERSION 4.3 TARGET_NAME ${PROJECT_NAME}_static INTERFACE_FILE "${SWIG_INTERFACE_FILE}" LANGUAGES ${NIH_SWIG_LANGUAGES} SWIG_TARGET_PREFIX ${TARGET_PREFIX} REQUIRED INSTALL_SUPPORT_FILES INSTALL_CONFIGURATIONS Release Debug)
 
 	# Post process generated targets
 	foreach(SWIG_LANG ${NIH_SWIG_LANGUAGES})
@@ -118,7 +118,10 @@ if(BUILD_NIH_SWIG)
 		# Setup common options like any other project
 		cu_setup_library_options(${SWIG_TARGET_NAME} ALIAS_NAME ${SWIG_LANG})
 
-		if(${SWIG_LANG} STREQUAL "lua")
+		if(${SWIG_LANG} STREQUAL "csharp")
+			include(${CU_ROOT_DIR}/cmake/cmakeUtils/helpers/GenerateNugetTarget.cmake REQUIRED)
+			cu_generate_csharp_nuget_target(TARGET_NAME ${SWIG_TARGET_NAME} NUGET_SOURCE_URL "${NUGET_PUBLISH_SOURCE_URL}" NUGET_API_KEY "${NUGET_PUBLISH_API_KEY}" CS_SOURCE_FOLDERS "${CMAKE_CURRENT_BINARY_DIR}/SWIG_${SWIG_LANG}/${SWIG_LANG}.files")
+		elseif(${SWIG_LANG} STREQUAL "lua")
 			target_link_libraries(${SWIG_TARGET_NAME} PRIVATE liblua)
 		elseif(${SWIG_LANG} STREQUAL "python")
 			find_package(Python3 COMPONENTS Development REQUIRED)

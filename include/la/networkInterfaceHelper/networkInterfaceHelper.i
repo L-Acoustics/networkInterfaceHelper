@@ -156,6 +156,4 @@
 %ignore la::networkInterface::NetworkInterfaceHelper::enumerateInterfaces; // Disable this method, use Observer instead
 %feature("director") la::networkInterface::NetworkInterfaceHelper::Observer;
 
-#define final // Final keyword not properly parsed by SWIG when used on a class
 %include "la/networkInterfaceHelper/networkInterfaceHelper.hpp"
-#undef final

@@ -53,6 +53,9 @@ set(CU_PROJECT_PRODUCTDESCRIPTION "Lightweight open source library for enumerati
 set(CU_PROJECT_CONTACT "software@l-acoustics.com")
 set(CU_PROJECT_STARTING_YEAR "2016")
 set(CU_COPYRIGHT_HOLDER "L-Acoustics and its contributors")
+# set(CU_DOTNET_FRAMEWORK_VERSION "net8.0") # Defaults to net8.0
+# set(NUGET_PUBLISH_SOURCE_URL "https://api.nuget.org/v3/index.json") # Defaults to https://api.nuget.org/v3/index.json
+# set(NUGET_PUBLISH_API_KEY "") # Defaults to empty
 
 # Enable cmake folders
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
