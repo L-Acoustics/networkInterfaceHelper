@@ -786,6 +786,11 @@ static std::string buildIPV6String(IPAddress::value_type_v6 const& ipv6, IPAddre
 
 	for (auto i = 0u; i < ipv6.size(); ++i)
 	{
+#if defined(__GNUC__) && (__GNUC__ == 11) && (__GNUC_MINOR__ == 4) && (__GNUC_PATCHLEVEL__ == 0)
+#	pragma GCC diagnostic push
+#	pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+		// For some reason, GCC 11.4.0 thinks that longestZeroSeq is not initialized
+#endif
 		// Check if we have a sequence at this position
 		if (longestZeroSeq.has_value() && i == longestZeroSeq->first)
 		{
@@ -794,6 +799,9 @@ static std::string buildIPV6String(IPAddress::value_type_v6 const& ipv6, IPAddre
 			mustAppendColon = false; // Reset the flag, we already added the double colon
 			continue;
 		}
+#if defined(__GNUC__) && (__GNUC__ == 11) && (__GNUC_MINOR__ == 4) && (__GNUC_PATCHLEVEL__ == 0)
+#	pragma GCC diagnostic pop
+#endif
 
 		if (!mustAppendColon)
 		{
