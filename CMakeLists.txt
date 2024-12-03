@@ -10,7 +10,7 @@ cmake_minimum_required(VERSION 3.22)
 # It should have 3 digits (x.y.z) on main branch, and 4 digits (x.y.z.w) on dev and task branches. The last digit being used as beta label.
 # As soon as an API change occurs in dev or task branch, update the version number by following SemVer rules (so the API breaking changes are not lost/forgotten).
 # Example: 1.5.0 is the upcoming release version (main branch) of current 1.5.0.3 devel version (dev/task) which will be labelled 1.5.0-beta3
-set(LA_NIH_VERSION 1.1.1)
+set(LA_NIH_VERSION 1.2.0)
 
 ############ Override from command line "CMake -D<OPTION>=TRUE/FALSE/0/1/ON/OFF"
 
@@ -53,6 +53,9 @@ set(CU_PROJECT_PRODUCTDESCRIPTION "Lightweight open source library for enumerati
 set(CU_PROJECT_CONTACT "software@l-acoustics.com")
 set(CU_PROJECT_STARTING_YEAR "2016")
 set(CU_COPYRIGHT_HOLDER "L-Acoustics and its contributors")
+# set(CU_DOTNET_FRAMEWORK_VERSION "net8.0") # Defaults to net8.0
+# set(NUGET_PUBLISH_SOURCE_URL "https://api.nuget.org/v3/index.json") # Defaults to https://api.nuget.org/v3/index.json
+# set(NUGET_PUBLISH_API_KEY "") # Defaults to empty
 
 # Enable cmake folders
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)

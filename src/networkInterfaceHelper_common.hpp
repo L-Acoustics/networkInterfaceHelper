@@ -115,19 +115,23 @@ constexpr IPAddress::value_type_packed_v4 makePackedMaskV4(std::uint8_t const co
 	return ~IPAddress::value_type_packed_v4(0) << (MaxBits - countBits);
 }
 
-constexpr IPAddress::value_type_packed_v4 makePackedMaskV6(std::uint8_t const countBits) noexcept
+constexpr IPAddress::value_type_packed_v6 makePackedMaskV6(std::uint8_t const countBits) noexcept
 {
-#pragma message("TODO: Use value_type_packed_v6 instead of value_type_packed_v4")
-	constexpr auto MaxBits = sizeof(IPAddress::value_type_packed_v4) * 8;
+	constexpr auto MaxBits = (sizeof(IPAddress::value_type_packed_v6::first_type) + sizeof(IPAddress::value_type_packed_v6::second_type)) * 8;
 	if (countBits >= MaxBits)
 	{
-		return ~IPAddress::value_type_packed_v4(0);
+		return IPAddress::value_type_packed_v6{ ~static_cast<IPAddress::value_type_packed_v6::first_type>(0), ~static_cast<IPAddress::value_type_packed_v6::second_type>(0) };
 	}
 	if (countBits == 0)
 	{
-		return IPAddress::value_type_packed_v4(0);
+		return IPAddress::value_type_packed_v6{ 0, 0 };
 	}
-	return ~IPAddress::value_type_packed_v4(0) << (MaxBits - countBits);
+	auto mask = IPAddress::value_type_packed_v6{ ~static_cast<IPAddress::value_type_packed_v6::first_type>(0), ~static_cast<IPAddress::value_type_packed_v6::second_type>(0) };
+	auto const lsbToShift = std::min(countBits, static_cast<std::uint8_t>(sizeof(IPAddress::value_type_packed_v6::second_type) * 8));
+	mask.second <<= lsbToShift;
+	auto const msbToShift = countBits - lsbToShift;
+	mask.first <<= msbToShift;
+	return mask;
 }
 
 static inline void validateNetmaskV4(IPAddress const& netmask)

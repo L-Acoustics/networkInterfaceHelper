@@ -20,11 +20,20 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Install some packages
+      run: apt update && apt install -y ninja-build
+
+    - name: Install CMake 3.29
+      run: |
+        wget https://github.com/Kitware/CMake/releases/download/v3.29.9/cmake-3.29.9-linux-x86_64.sh
+        chmod +x cmake-3.29.9-linux-x86_64.sh
+        sudo ./cmake-3.29.9-linux-x86_64.sh --skip-license --prefix=/usr/local
+
     - name: Init repository
       run: git submodule update --init --recursive
 
     - name: Configure CMake
-      run: ./gen_cmake.sh -o _build -${{env.BUILD_TYPE}}
+      run: ./gen_cmake.sh -o _build -${{env.BUILD_TYPE}} -c Ninja
 
     - name: Build
       # Build your program with the given configuration

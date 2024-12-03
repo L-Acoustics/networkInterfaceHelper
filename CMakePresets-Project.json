@@ -1,0 +1,24 @@
+{
+	"version": 6,
+	"configurePresets": [
+		{
+			"name": "project",
+			"hidden": true,
+			"cacheVariables": {
+				"BUILD_NIH_EXAMPLES": "FALSE",
+				"BUILD_NIH_TESTS": "FALSE",
+				"BUILD_C_BINDINGS": "FALSE",
+				"BUILD_NIH_SWIG": "FALSE",
+				"INSTALL_NIH_EXAMPLES": "FALSE",
+				"INSTALL_NIH_TESTS": "FALSE",
+				"INSTALL_NIH_LIB_STATIC": "FALSE",
+				"INSTALL_NIH_LIB_C": "TRUE",
+				"INSTALL_NIH_LIB_SWIG": "TRUE",
+				"INSTALL_NIH_HEADERS": "TRUE",
+				"ENABLE_CODE_SIGNING": "FALSE",
+				"MARKETING_VERSION_DIGITS": "2",
+				"MARKETING_VERSION_POSTFIX": "-beta"
+			}
+		}
+	]
+}

@@ -19,6 +19,12 @@
 		#include <la/networkInterfaceHelper/networkInterfaceHelper.hpp>
 %}
 
+#if defined(USE_SIZE_T_64)
+// Use 64-bit size_t
+%apply unsigned long long { size_t };
+%apply const unsigned long long & { const size_t & };
+#endif
+
 // C# Specifics
 #if defined(SWIGCSHARP)
 // Optimize code generation by enabling RVO
@@ -33,6 +39,13 @@
 #endif
 
 ////////////////////////////////////////
+// Global functions
+////////////////////////////////////////
+//%nspace la::networkInterface::getLibraryVersion; // Put into moduleName.functionName https://github.com/swig/swig/issues/591
+//%nspace la::networkInterface::getLibraryName; // Put into moduleName.functionName https://github.com/swig/swig/issues/591
+//%nspace la::networkInterface::getLibraryCopyright; // Put into moduleName.functionName https://github.com/swig/swig/issues/591
+
+////////////////////////////////////////
 // IPAddress
 ////////////////////////////////////////
 %nspace la::networkInterface::IPAddress;
@@ -41,6 +54,9 @@
 %ignore la::networkInterface::IPAddress::operator value_type_v4; // Ignore value_type_v4 operator (equivalent to getIPV4)
 %ignore la::networkInterface::IPAddress::operator value_type_v6; // Ignore value_type_v6 operator (equivalent to getIPV6)
 %ignore la::networkInterface::IPAddress::operator value_type_packed_v4; // Ignore value_type_packed_v4 operator (equivalent to getIPV4Packed)
+%ignore la::networkInterface::IPAddress::operator value_type_packed_v6; // Ignore value_type_packed_v6 operator (equivalent to getIPV6Packed)
+%ignore la::networkInterface::IPAddress::CompatibleV6; // Ignore CompatibleV6 (not needed)
+%ignore la::networkInterface::IPAddress::MappedV6; // Ignore MappedV6 (not needed)
 %ignore la::networkInterface::IPAddress::hash; // Ignore hash (not needed)
 %rename("toString") la::networkInterface::IPAddress::operator std::string;
 %ignore operator++(IPAddress& lhs); // Redefined in %extend
@@ -140,6 +156,4 @@
 %ignore la::networkInterface::NetworkInterfaceHelper::enumerateInterfaces; // Disable this method, use Observer instead
 %feature("director") la::networkInterface::NetworkInterfaceHelper::Observer;
 
-#define final // Final keyword not properly parsed by SWIG when used on a class
 %include "la/networkInterfaceHelper/networkInterfaceHelper.hpp"
-#undef final
