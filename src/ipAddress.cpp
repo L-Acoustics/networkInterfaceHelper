@@ -795,7 +795,7 @@ static std::string buildIPV6String(IPAddress::value_type_v6 const& ipv6, IPAddre
 		if (longestZeroSeq.has_value() && i == longestZeroSeq->first)
 		{
 			ss << "::";
-			i += longestZeroSeq->second - 1;
+			i += static_cast<decltype(i)>(longestZeroSeq->second - 1);
 			mustAppendColon = false; // Reset the flag, we already added the double colon
 			continue;
 		}
