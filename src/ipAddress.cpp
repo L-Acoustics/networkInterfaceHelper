@@ -728,6 +728,11 @@ static std::string buildIPV4String(IPAddress::value_type_v4 const& ipv4) noexcep
 	return ip;
 }
 
+#if defined(__GNUC__) && !defined(__clang__)
+#	pragma GCC diagnostic push
+#	pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+// For some reason, GCC thinks some variables in this method are not initialized
+#endif
 static std::string buildIPV6String(IPAddress::value_type_v6 const& ipv6, IPAddress::value_type_packed_v6 const& packedIP, bool const displayAsEmbeddedIPV4) noexcept
 {
 	// Special case for unspecified address
@@ -786,11 +791,6 @@ static std::string buildIPV6String(IPAddress::value_type_v6 const& ipv6, IPAddre
 
 	for (auto i = 0u; i < ipv6.size(); ++i)
 	{
-#if defined(__GNUC__) && !defined(__clang__)
-#	pragma GCC diagnostic push
-#	pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-		// For some reason, GCC thinks that longestZeroSeq is not initialized
-#endif
 		// Check if we have a sequence at this position
 		if (longestZeroSeq.has_value() && i == longestZeroSeq->first)
 		{
@@ -799,9 +799,6 @@ static std::string buildIPV6String(IPAddress::value_type_v6 const& ipv6, IPAddre
 			mustAppendColon = false; // Reset the flag, we already added the double colon
 			continue;
 		}
-#if defined(__GNUC__) && !defined(__clang__)
-#	pragma GCC diagnostic pop
-#endif
 
 		if (!mustAppendColon)
 		{
@@ -825,6 +822,9 @@ static std::string buildIPV6String(IPAddress::value_type_v6 const& ipv6, IPAddre
 
 	return ss.str();
 }
+#if defined(__GNUC__) && !defined(__clang__)
+#	pragma GCC diagnostic pop
+#endif
 
 void IPAddress::buildIPString() noexcept
 {
