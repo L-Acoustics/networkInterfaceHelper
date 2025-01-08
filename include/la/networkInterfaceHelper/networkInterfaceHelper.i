@@ -118,6 +118,7 @@
 // Enable some templates
 %template(IPAddressV4) std::array<std::uint8_t, 4>;
 %template(IPAddressV6) std::array<std::uint16_t, 8>;
+%template(IPAddressPackedV6) std::pair<std::uint64_t, std::uint64_t>;
 
 ////////////////////////////////////////
 // IPAddressInfo
