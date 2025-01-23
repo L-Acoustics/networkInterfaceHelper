@@ -12,7 +12,7 @@ void displayInterfaces()
 	la.networkInterface.NetworkInterfaceHelper.getInstance().unregisterObserver(obs);
 }
 
-class Observer : la.networkInterface.NetworkInterfaceHelper.Observer
+class Observer : la.networkInterface.NetworkInterfaceHelper.DefaultedObserver
 {
 	public override void onInterfaceAdded(la.networkInterface.Interface intfc)
 	{
@@ -42,24 +42,6 @@ class Observer : la.networkInterface.NetworkInterfaceHelper.Observer
 		}
 
 		++intNum;
-	}
-	public override void onInterfaceRemoved(la.networkInterface.Interface intfc)
-	{
-	}
-	public override void onInterfaceEnabledStateChanged(la.networkInterface.Interface intfc, bool isEnabled)
-	{
-	}
-	public override void onInterfaceConnectedStateChanged(la.networkInterface.Interface intfc, bool isConnected)
-	{
-	}
-	public override void onInterfaceAliasChanged(la.networkInterface.Interface intfc, string alias)
-	{
-	}
-	public override void onInterfaceIPAddressInfosChanged(la.networkInterface.Interface intfc, IPAddressInfos ipAddressInfos)
-	{
-	}
-	public override void onInterfaceGateWaysChanged(la.networkInterface.Interface intfc, Gateways gateways)
-	{
 	}
 
 	private uint intNum = 1;
