@@ -166,5 +166,6 @@
 %nspace la::networkInterface::NetworkInterfaceHelper::Observer;
 %ignore la::networkInterface::NetworkInterfaceHelper::enumerateInterfaces; // Disable this method, use Observer instead
 %feature("director") la::networkInterface::NetworkInterfaceHelper::Observer;
+%feature("director") la::networkInterface::NetworkInterfaceHelper::DefaultedObserver;
 
 %include "la/networkInterfaceHelper/networkInterfaceHelper.hpp"
