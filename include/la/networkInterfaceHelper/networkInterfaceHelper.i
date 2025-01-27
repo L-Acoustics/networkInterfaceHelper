@@ -4,8 +4,36 @@
 
 %module(directors="1") la_networkInterfaceHelper
 
+// C# Specifics
+#if defined(SWIGCSHARP)
+// Optimize code generation by enabling RVO
+%typemap(out, optimal="1") SWIGTYPE
+%{
+	$result = new $1_ltype($1);
+%}
+#pragma SWIG nowarn=474
+// Marshal all std::string as UTF8Str
+%typemap(imtype, outattributes="[return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)]", inattributes="[System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)] ") std::string, std::string const& "string"
+// Better debug display
+%typemap(csattributes) la::networkInterface::IPAddress "[System.Diagnostics.DebuggerDisplay(\"{toString()}\")]"
+// Expose internal constructor and methods publicly, some dependant modules may need it
+#	if !defined(SWIGIMPORTED)
+#	define PUBLIC_BUT_HIDDEN [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)] public
+	SWIG_CSBODY_PROXY(PUBLIC_BUT_HIDDEN, PUBLIC_BUT_HIDDEN, SWIGTYPE)
+#	endif
+#endif
+
+// Common for all languages
+// Use 64-bit size_t
+#if defined(USE_SIZE_T_64)
+%apply unsigned long long { size_t };
+%apply const unsigned long long & { const size_t & };
+#endif
+
+
 %include <stl.i>
 %include <std_string.i>
+%include <std_pair.i>
 %include <stdint.i>
 %include <std_array.i>
 %include <std_vector.i>
@@ -19,29 +47,6 @@
 		#include <la/networkInterfaceHelper/networkInterfaceHelper.hpp>
 %}
 
-#if defined(USE_SIZE_T_64)
-// Use 64-bit size_t
-%apply unsigned long long { size_t };
-%apply const unsigned long long & { const size_t & };
-#endif
-
-// C# Specifics
-#if defined(SWIGCSHARP)
-// Optimize code generation by enabling RVO
-%typemap(out, optimal="1") SWIGTYPE
-%{
-		$result = new $1_ltype(($1_ltype const&)$1);
-%}
-// Marshal all std::string as UTF8Str
-%typemap(imtype, outattributes="[return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)]", inattributes="[System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)] ") std::string, std::string const& "string"
-// Better debug display
-%typemap(csattributes) la::networkInterface::IPAddress "[System.Diagnostics.DebuggerDisplay(\"{toString()}\")]"
-// Expose internal constructor and methods publicly, some dependant modules may need it
-#	if !defined(SWIGIMPORTED)
-#	define PUBLIC_BUT_HIDDEN [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)] public
-	SWIG_CSBODY_PROXY(PUBLIC_BUT_HIDDEN, PUBLIC_BUT_HIDDEN, SWIGTYPE)
-#	endif
-#endif
 
 ////////////////////////////////////////
 // Global functions
@@ -113,6 +118,7 @@
 // Enable some templates
 %template(IPAddressV4) std::array<std::uint8_t, 4>;
 %template(IPAddressV6) std::array<std::uint16_t, 8>;
+%template(IPAddressPackedV6) std::pair<std::uint64_t, std::uint64_t>;
 
 ////////////////////////////////////////
 // IPAddressInfo
@@ -160,5 +166,6 @@
 %nspace la::networkInterface::NetworkInterfaceHelper::Observer;
 %ignore la::networkInterface::NetworkInterfaceHelper::enumerateInterfaces; // Disable this method, use Observer instead
 %feature("director") la::networkInterface::NetworkInterfaceHelper::Observer;
+%feature("director") la::networkInterface::NetworkInterfaceHelper::DefaultedObserver;
 
 %include "la/networkInterfaceHelper/networkInterfaceHelper.hpp"

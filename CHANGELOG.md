@@ -4,6 +4,11 @@ All notable changes to the LA Network Interface Helper Library will be documente
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.2.5] - 2025-01-27
+### Fixed
+- Missing SWIG type for IPAddressPackedV6.
+- Missing SWIG `director` attribute for `DefaultedObserver`.
+
 ## [1.2.4] - 2024-12-20
 
 ## [1.2.3] - 2024-12-11
