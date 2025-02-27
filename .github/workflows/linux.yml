@@ -1,0 +1,67 @@
+name: Linux
+
+on:
+  push:
+    branches: [ dev, main ]
+  pull_request:
+    branches: [ dev ]
+    paths-ignore:
+      - 'Docker'
+      - '**/README.md'
+      - '**/LICENCE'
+
+jobs:
+  linux-build-and-test:
+    # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
+    # You can convert this to a matrix build if you need cross-platform coverage.
+    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ["release","debug"]
+        os: ["ubuntu-22.04","ubuntu-22.04-arm"]
+
+    runs-on: ${{matrix.os}}
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Install job dependencies
+      run : |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build wget build-essential
+
+    - name: Install CMake 3.31.5
+      shell: bash
+      run: |
+        set +xe
+        which cmake &> /dev/null 
+        if [ $? -ne 0 ]; then
+          arch=$([ $(uname -m) = "arm64" ] && echo "aarch64" || echo "x86_64")
+          cmake_script="cmake-3.31.5-linux-$arch.sh"
+          wget "https://github.com/Kitware/CMake/releases/download/v3.31.5/$cmake_script"
+          chmod +x $cmake_script
+          sudo ./$cmake_script --skip-license --prefix=/usr/local
+        fi
+        CMAKE_VERSION=$(cmake --version | awk '/version/ {print $3}')
+        echo "Using cmake: ${CMAKE_VERSION}"
+    - name: Configure CMake
+      shell: bash
+      run: |
+        echo "Generating CMake for Target: ${{matrix.target}}" 
+        ./gen_cmake.sh -o _build -${{matrix.target}} -c Ninja
+
+    - name: Build
+      # Build your program with the given configuration
+      run: cmake --build _build
+
+    - name: Test
+      working-directory: ${{github.workspace}}/_build/tests/src
+      shell: bash
+      run: |
+        test_cmd="./Tests --gtest_filter=-MANUAL*"
+        if [ "${{matrix.target}}" = "debug" ]; then
+          test_cmd="./Tests-d --gtest_filter=-MANUAL*"
+        fi
+        eval $test_cmd 

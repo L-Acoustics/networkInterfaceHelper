@@ -1,5 +1,5 @@
+[![Linux build & test](https://github.com/L-Acoustics/networkInterfaceHelper/actions/workflows/linux.yml/badge.svg)](https://github.com/L-Acoustics/networkInterfaceHelper/actions/workflows/linux.yml)
 # LA Network Interface Helper Library
-
 Copyright (C) 2016-2023, L-Acoustics
 
 ## What is LA_networkInterfaceHelper
