@@ -1,0 +1,52 @@
+name: Windows
+
+
+on:
+  push:
+    branches: [ dev, main ]
+  pull_request:
+    branches: [ dev ]
+    paths-ignore:
+      - 'Docker'
+      - '**/README.md'
+      - '**/LICENCE'
+
+jobs:
+  windows-build-and-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ["release","debug"]
+        os: ["windows-2022"]
+    
+    runs-on: ${{matrix.os}}
+    env:
+      LC_ALL: en_US.UTF-8
+
+    steps:
+      - uses: actions/checkout@v2
+        with: 
+          submodules: recursive
+
+      - name: Install job dependencies
+        shell: bash
+        run: |
+          choco install -y grep cmake
+          
+      - name: Configure CMake
+        shell: bash
+        run: |
+          echo "Generating CMake for Target: ${{matrix.target}}" 
+          ./gen_cmake.sh -o _build -${{matrix.target}} 
+
+      - name: Build
+        # Build your program with the given configuration
+        run: cmake --build _build
+
+      - name: Test
+        working-directory: ${{github.workspace}}/_build/tests/src
+        shell: bash
+        run: |
+          test_cmd="Debug/Tests-d.exe --gtest_filter=-MANUAL*"
+          eval $test_cmd 
+          
