@@ -97,6 +97,7 @@ jobs:
         report_paths: ${{github.workspace}}/_build/tests/src/junit_output.xml
         commit: ${{github.sha}}
         comment: true
+        job_name: ${{matrix.os}}[${{matrix.target}}]
 
 
 
