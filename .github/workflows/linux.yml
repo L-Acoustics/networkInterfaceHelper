@@ -71,7 +71,7 @@ jobs:
       env:
           GTEST_OUTPUT: "xml:./test_results.xml"
       run: |
-        test_cmd="./Tests --gtest_filter=-MANUAL*"
+        test_cmd="./Tests --gtest_filter=mANUAL*"
         if [ "${{matrix.target}}" = "debug" ]; then
           test_cmd="./Tests-d --gtest_filter=-MANUAL*"
         fi
