@@ -107,7 +107,7 @@ jobs:
         path: test_results
 
     - name: Display Test Results
-      uses: EnricoMi/publish-unit-test-result-action/windows@v2
+      uses: EnricoMi/publish-unit-test-result-action@v2
       with:
         files: test_results/**/junit_*.xml
         commit: ${{github.sha}}
