@@ -83,7 +83,7 @@ jobs:
         report_file="test_results.xml"
         junit_report_file="junit_report.xml"
         if [ -f $report_file ]; then
-          python gtest_to_junit.py $report_file $junit_report_file
+          python "../../../gtest_to_junit.py" $report_file 
           echo "GENERATE_REPORT=1" >> $GITHUB_ENV
         else
           echo "No test results found"
