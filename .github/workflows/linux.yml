@@ -10,6 +10,10 @@ on:
       - '**/README.md'
       - '**/LICENCE'
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   linux-build-and-test:
     # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
@@ -56,12 +60,43 @@ jobs:
       # Build your program with the given configuration
       run: cmake --build _build
 
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12' 
+
     - name: Test
       working-directory: ${{github.workspace}}/_build/tests/src
       shell: bash
+      env:
+          GTEST_OUTPUT: "xml:./test_results.xml"
       run: |
         test_cmd="./Tests --gtest_filter=-MANUAL*"
         if [ "${{matrix.target}}" = "debug" ]; then
           test_cmd="./Tests-d --gtest_filter=-MANUAL*"
         fi
         eval $test_cmd 
+
+    - name: Convert Test Results to Junit
+      working-directory: ${{github.workspace}}/_build/tests/src
+      shell: bash
+      run: |
+        report_file="test_results.xml"
+        junit_report_file="junit_report.xml"
+        if [ -f $report_file ]; then
+          python gtest_to_junit.py $report_file $junit_report_file
+          echo "GENERATE_REPORT=1" >> $GITHUB_ENV
+        else
+          echo "No test results found"
+          echo "GENERATE_REPORT=0" >> $GITHUB_ENV
+        fi
+
+    - name: Display Test Results
+      if:  env.GENERATE_REPORT == '1'
+      uses: mikepenz/action-junit-report@v2
+      with:
+        report_paths: ${{github.workspace}}/_build/tests/src/junit_report.xml
+        commit: ${{github.sha}}
+        comment: true
+
+
+
