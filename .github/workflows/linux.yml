@@ -107,7 +107,6 @@ jobs:
         path: test_results
 
     - name: Display Test Results
-      if:  env.GENERATE_REPORT == '1'
       uses: EnricoMi/publish-unit-test-result-action/windows@v2
       with:
         files: test_results/**/junit_*.xml
