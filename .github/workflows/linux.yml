@@ -71,7 +71,7 @@ jobs:
       env:
           GTEST_OUTPUT: "xml:./test_results.xml"
       run: |
-        test_cmd="./Tests"
+        test_cmd="./Tests --gtest_filter=-MANUAL*"
         if [ "${{matrix.target}}" = "debug" ]; then
           test_cmd="./Tests-d --gtest_filter=-MANUAL*"
         fi
@@ -94,7 +94,7 @@ jobs:
       if: env.GENERATE_REPORT == '1'
       uses: actions/upload-artifact@v4
       with:
-        name: test_results_${{matrix.os}}[${{matrix.target}}] 
+        name: test_results_${{matrix.os}}-${{matrix.target}} 
         path: ${{github.workspace}}/_build/tests/src/junit_output.xml
 
   display-test-results:
