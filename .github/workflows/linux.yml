@@ -94,7 +94,7 @@ jobs:
       if:  env.GENERATE_REPORT == '1'
       uses: mikepenz/action-junit-report@v5
       with:
-        report_paths: ${{github.workspace}}/_build/tests/src/junit_report.xml
+        report_paths: ${{github.workspace}}/_build/tests/src/junit_output.xml
         commit: ${{github.sha}}
         comment: true
 
