@@ -24,7 +24,6 @@ jobs:
         sudo apt-get install -y clang-format dos2unix 
     - name: Run fix_files
       run: |
-        set +xe
         ./scripts/bashUtils/fix_files.sh 
     - name: Check for changes
       shell: bash
