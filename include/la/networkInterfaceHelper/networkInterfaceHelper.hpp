@@ -79,8 +79,12 @@ public:
 		V6,
 	};
 
-	static struct CompatibleV6Tag{} CompatibleV6;
-	static struct MappedV6Tag{} MappedV6;
+	static struct CompatibleV6Tag
+	{
+	} CompatibleV6;
+	static struct MappedV6Tag
+	{
+	} MappedV6;
 
 	/** Default constructor. */
 	IPAddress() noexcept;
