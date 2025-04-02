@@ -3,13 +3,14 @@ name: Linux
 on:
   push:
     branches: [ dev, main ]
-  pull_request:
-    branches: [ dev ]
-    paths-ignore:
-      - 'Docker'
-      - '**/README.md'
-      - '**/LICENCE'
-
+  # pull_request:
+  #   branches: [ dev ]
+  #   paths-ignore:
+  #     - 'Docker'
+  #     - '**/README.md'
+  #     - '**/LICENCE'
+  workflow_call:
+    
 permissions:
   contents: write
   pull-requests: write
@@ -112,17 +113,6 @@ jobs:
         files: test_results/**/junit_*.xml
         commit: ${{github.sha}}
         comment_title: "Test results Linux"
+        check_run: false
           
-    # - name: Display Test Results
-    #   if:  env.GENERATE_REPORT == '1'
-    #   uses: mikepenz/action-junit-report@v5
-    #   with:
-    #     report_paths: ${{github.workspace}}/_build/tests/src/junit_output.xml
-    #     commit: ${{github.sha}}
-    #     comment: true
-    #     job_name: ${{matrix.os}}[${{matrix.target}}]
-    #     summary: ${{matrix.os}}[${{matrix.target}}]
-    #     detailed_summary: true
-    #
-
 
