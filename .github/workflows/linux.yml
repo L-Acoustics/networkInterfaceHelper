@@ -111,7 +111,7 @@ jobs:
       with:
         files: test_results/**/junit_*.xml
         commit: ${{github.sha}}
-        comment_title: "Test results ${{matrix.os}}[${{matrix.target}}]${{github.sha}}"
+        comment_title: "Test results Linux"
           
     # - name: Display Test Results
     #   if:  env.GENERATE_REPORT == '1'
