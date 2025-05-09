@@ -72,6 +72,10 @@
 
 // https://developer.apple.com/library/archive/documentation/Networking/Conceptual/SystemConfigFrameworks/
 // Command line tool: scutil
+//   eg. Start scutil
+//       List all known keys: list
+//       List all enXX interface link keys: list State:/Network/Interface/en[^/]+/Link
+//       Monitor Link changes for en0 interface: n.add State:/Network/Interface/en0/Link
 #define DYNAMIC_STORE_NETWORK_STATE_STRING @"State:/Network/Interface/"
 #define DYNAMIC_STORE_NETWORK_SERVICE_STRING @"Setup:/Network/Service/"
 #define DYNAMIC_STORE_LINK_STRING @"/Link"
