@@ -212,6 +212,23 @@ private:
 		return isConnected;
 	}
 
+	std::string getUserDefinedName(SCDynamicStoreRef const store, NSString const* const serviceID) const noexcept
+	{
+		auto const key = [NSString stringWithFormat:DYNAMIC_STORE_NETWORK_SERVICE_STRING @"%@", serviceID];
+		auto const* const keyRef = static_cast<CFStringRef>(key);
+
+		auto const value = RefGuard{ SCDynamicStoreCopyValue(store, keyRef) };
+		if (value)
+		{
+			auto* const userDefinedName = (NSString*)[(__bridge NSDictionary const*)*value valueForKey:@"UserDefinedName"];
+			if (userDefinedName)
+			{
+				return getStdString(userDefinedName);
+			}
+		}
+		return std::string{};
+	}
+
 	Interface::IPAddressInfos getIPAddressInfoFromKey(SCDynamicStoreRef const store, CFStringRef const ipKeyRef) const noexcept
 	{
 		auto ipAddressInfos = Interface::IPAddressInfos{};
@@ -349,6 +366,7 @@ private:
 
 		if (store)
 		{
+			// List all services and retrieve the attached interface
 			auto const serviceKeys = DYNAMIC_STORE_NETWORK_SERVICE_STRING @"[^/]+" DYNAMIC_STORE_INTERFACE_STRING;
 			auto const* const serviceKeysRef = static_cast<CFStringRef>(serviceKeys);
 			auto servicesArray = RefGuard{ SCDynamicStoreCopyKeyList(*store, serviceKeysRef) };
@@ -383,8 +401,13 @@ private:
 							interface.type = getInterfaceType(hardware);
 							interface.description = getStdString(description);
 
-							// TODO: Understand how to get the real user defined name (not sure why, as Settings is able to display it, the UserDefinedName key is present in /Library/Preferences/SystemConfiguration/preferences.plist under /Network/Service/<serverID>/UserDefinedName but not in DynamicStore)
-							interface.alias = interface.description + " (" + interface.id + ")";
+							// Get User Defined Name from the DynamicStore
+							interface.alias = getUserDefinedName(*store, serviceID);
+							// If not defined, use the default one
+							if (interface.alias.empty())
+							{
+								interface.alias = interface.description + " (" + interface.id + ")";
+							}
 
 							// Declared macOS services are always enabled through DynamicStore (not sure why, as Settings is able to display disabled interfaces and the __INACTIVE__ value is set in /Library/Preferences/SystemConfiguration/preferences.plist)
 							interface.isEnabled = true;
