@@ -23,12 +23,12 @@ This software is licensed under the BSD 3-clause License (see [LICENSE](LICENSE)
 
 ### Windows
 - Windows 10
-- Visual Studio 2019 v16.3 or greater (using platform toolset v142)
-- GitBash or cygwin
+- Visual Studio 2022 v17.6 or greater
+- GitBash, cygwin or WSL
 
 ### macOS
-- macOS 10.12
-- Xcode 12
+- macOS 10.13
+- Xcode 15
 
 ### Linux
 - C++17 compliant compiler (minimum recommended g++ 11.2.0)

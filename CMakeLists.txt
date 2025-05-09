@@ -75,7 +75,7 @@ include(${CU_BASE_DIR}/ProjectProperties.cmake)
 cu_setup_project_version_variables(${LA_NIH_VERSION})
 
 # Set minimum OSX/iOS version
-cu_setup_apple_minimum_versions(MACOS 10.9 IOS 11)
+cu_setup_apple_minimum_versions(MACOS 10.13 IOS 11)
 
 ############ Define some variables
 
