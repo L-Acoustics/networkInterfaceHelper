@@ -69,6 +69,7 @@
 
 #import <SystemConfiguration/SystemConfiguration.h>
 #import <Foundation/Foundation.h>
+#import <IOKit/network/IONetworkInterface.h>
 
 // https://developer.apple.com/library/archive/documentation/Networking/Conceptual/SystemConfigFrameworks/
 // Command line tool: scutil
@@ -358,105 +359,113 @@ private:
 
 	void refreshInterfaces(Interfaces& interfaces) noexcept
 	{
-		clearInterfaceToServiceMapping();
+		@autoreleasepool {
+			clearInterfaceToServiceMapping();
 
-		// Create a temporary dynamic store session
-		auto ctx = SCDynamicStoreContext{ 0, NULL, NULL, NULL, NULL };
-		auto const store = RefGuard{ SCDynamicStoreCreate(nullptr, CFSTR("networkInterfaceHelper"), nullptr, &ctx) };
+			// Create a temporary dynamic store session
+			auto ctx = SCDynamicStoreContext{ 0, NULL, NULL, NULL, NULL };
+			auto const store = RefGuard{ SCDynamicStoreCreate(nullptr, CFSTR("networkInterfaceHelper"), nullptr, &ctx) };
 
-		if (store)
-		{
-			// List all services and retrieve the attached interface
-			auto const serviceKeys = DYNAMIC_STORE_NETWORK_SERVICE_STRING @"[^/]+" DYNAMIC_STORE_INTERFACE_STRING;
-			auto const* const serviceKeysRef = static_cast<CFStringRef>(serviceKeys);
-			auto servicesArray = RefGuard{ SCDynamicStoreCopyKeyList(*store, serviceKeysRef) };
-			if (servicesArray)
+			if (store)
 			{
-				auto const count = CFArrayGetCount(*servicesArray);
-
-				for (auto index = CFIndex{ 0 }; index < count; ++index)
+				// List all services and retrieve the attached interface
+				auto const serviceKeys = DYNAMIC_STORE_NETWORK_SERVICE_STRING @"[^/]+" DYNAMIC_STORE_INTERFACE_STRING;
+				auto const* const serviceKeysRef = static_cast<CFStringRef>(serviceKeys);
+				auto servicesArray = RefGuard{ SCDynamicStoreCopyKeyList(*store, serviceKeysRef) };
+				if (servicesArray)
 				{
-					auto const* const keyRef = static_cast<CFStringRef>(CFArrayGetValueAtIndex(*servicesArray, index));
-					auto const value = RefGuard{ SCDynamicStoreCopyValue(*store, keyRef) };
-					if (value)
+					auto const count = CFArrayGetCount(*servicesArray);
+
+					// Process all services found
+					for (auto index = CFIndex{ 0 }; index < count; ++index)
 					{
-						auto const* const valueDictRef = static_cast<CFDictionaryRef>(*value);
-						auto const* const valueDict = (__bridge NSDictionary const*)valueDictRef;
-
-						NSString* const deviceName = [valueDict objectForKey:@"DeviceName"];
-						NSString* const hardware = [valueDict objectForKey:@"Hardware"];
-						NSString* const description = [valueDict objectForKey:@"UserDefinedName"];
-
-						if (deviceName && hardware)
+						auto const* const keyRef = static_cast<CFStringRef>(CFArrayGetValueAtIndex(*servicesArray, index));
+						// Read the content of the service key from the Dynamic Store (returned as a dictionary)
+						auto const value = RefGuard{ SCDynamicStoreCopyValue(*store, keyRef) };
+						if (value)
 						{
-							auto const* const key = (__bridge NSString const*)keyRef;
-							auto const prefixLength = [DYNAMIC_STORE_NETWORK_SERVICE_STRING length];
-							auto const suffixLength = [DYNAMIC_STORE_INTERFACE_STRING length];
-							auto const* const serviceID = [key substringWithRange:NSMakeRange(prefixLength, [key length] - prefixLength - suffixLength)];
-							setInterfaceToServiceMapping(deviceName, serviceID);
+							auto const* const valueDictRef = static_cast<CFDictionaryRef>(*value);
+							auto const* const valueDict = (__bridge NSDictionary const*)valueDictRef;
 
-							auto interface = Interface{};
-							auto const interfaceID = getStdString(deviceName);
-							interface.id = interfaceID;
-							interface.type = getInterfaceType(hardware);
-							interface.description = getStdString(description);
+							NSString* const deviceName = [valueDict objectForKey:@"DeviceName"]; // BSD name (eg. en0, en1, ...)
+							NSString* const hardware = [valueDict objectForKey:@"Hardware"]; // Physical connector type (eg. Ethernet, AirPort, ...)
+							NSString* const description = [valueDict objectForKey:@"UserDefinedName"];
 
-							// Get User Defined Name from the DynamicStore
-							interface.alias = getUserDefinedName(*store, serviceID);
-							// If not defined, use the default one
-							if (interface.alias.empty())
+							if (deviceName && hardware)
 							{
-								interface.alias = interface.description + " (" + interface.id + ")";
+								// Extract the ID of the service from the keyname
+								auto const* const key = (__bridge NSString const*)keyRef;
+								auto const prefixLength = [DYNAMIC_STORE_NETWORK_SERVICE_STRING length];
+								auto const suffixLength = [DYNAMIC_STORE_INTERFACE_STRING length];
+								auto const* const serviceID = [key substringWithRange:NSMakeRange(prefixLength, [key length] - prefixLength - suffixLength)];
+
+								// Map the service ID and bsd name
+								setInterfaceToServiceMapping(deviceName, serviceID);
+
+								// Create the interface object
+								auto interface = Interface{};
+								auto const interfaceID = getStdString(deviceName);
+								interface.id = interfaceID;
+								interface.type = getInterfaceType(hardware);
+								interface.description = getStdString(description);
+
+								// Get User Defined Name from the DynamicStore
+								interface.alias = getUserDefinedName(*store, serviceID);
+								// If not defined, use the default one
+								if (interface.alias.empty())
+								{
+									interface.alias = interface.description + " (" + interface.id + ")";
+								}
+
+								// Declared macOS services are always enabled through DynamicStore (not sure why, as Settings is able to display disabled interfaces and the __INACTIVE__ value is set in /Library/Preferences/SystemConfiguration/preferences.plist)
+								interface.isEnabled = true;
+
+								// Check if interface is connected
+								{
+									auto const linkStateKey = [NSString stringWithFormat:DYNAMIC_STORE_NETWORK_STATE_STRING @"%@" DYNAMIC_STORE_LINK_STRING, deviceName];
+									auto const* const linkStateKeyRef = static_cast<CFStringRef>(linkStateKey);
+									interface.isConnected = isInterfaceConnected(*store, linkStateKeyRef);
+								}
+
+								// Get IP Addresses info
+								interface.ipAddressInfos = getIPAddressInfo(*store, deviceName);
+
+								// Is interface Virtual
+								interface.isVirtual = getIsVirtualInterface(deviceName, interface.type);
+
+								// Add the interface to the list
+								interfaces[interfaceID] = std::move(interface);
 							}
-
-							// Declared macOS services are always enabled through DynamicStore (not sure why, as Settings is able to display disabled interfaces and the __INACTIVE__ value is set in /Library/Preferences/SystemConfiguration/preferences.plist)
-							interface.isEnabled = true;
-
-							// Check if interface is connected
-							{
-								auto const linkStateKey = [NSString stringWithFormat:DYNAMIC_STORE_NETWORK_STATE_STRING @"%@" DYNAMIC_STORE_LINK_STRING, deviceName];
-								auto const* const linkStateKeyRef = static_cast<CFStringRef>(linkStateKey);
-								interface.isConnected = isInterfaceConnected(*store, linkStateKeyRef);
-							}
-
-							// Get IP Addresses info
-							interface.ipAddressInfos = getIPAddressInfo(*store, deviceName);
-
-							// Is interface Virtual
-							interface.isVirtual = getIsVirtualInterface(deviceName, interface.type);
-
-							// Add the interface to the list
-							interfaces[interfaceID] = std::move(interface);
 						}
 					}
 				}
-			}
 
-			// Set other fields we couldn't retrieve
-			setOtherFieldsFromIOCTL(interfaces);
+				// Set other fields we couldn't retrieve
+				setOtherFieldsFromIOCTL(interfaces);
 
-			// Remove interfaces that are not complete
-			for (auto it = interfaces.begin(); it != interfaces.end(); /* Iterate inside the loop */)
-			{
-				auto& intfc = it->second;
-
-				auto isValidMacAddress = false;
-				for (auto const v : intfc.macAddress)
+				// Remove interfaces that are not complete
+				for (auto it = interfaces.begin(); it != interfaces.end(); /* Iterate inside the loop */)
 				{
-					if (v != 0)
+					auto& intfc = it->second;
+
+					auto isValidMacAddress = false;
+					for (auto const v : intfc.macAddress)
 					{
-						isValidMacAddress = true;
-						break;
+						if (v != 0)
+						{
+							isValidMacAddress = true;
+							break;
+						}
 					}
-				}
-				if (intfc.type == Interface::Type::None || !isValidMacAddress)
-				{
-					// Remove from the list
-					it = interfaces.erase(it);
-				}
-				else
-				{
-					++it;
+					if (intfc.type == Interface::Type::None || !isValidMacAddress)
+					{
+						// Remove from the list
+						it = interfaces.erase(it);
+					}
+					else
+					{
+						++it;
+					}
 				}
 			}
 		}
@@ -523,7 +532,7 @@ private:
 		}
 	}
 
-	static void onIONetworkControllerListChanged(void* refcon, io_iterator_t iterator) noexcept
+	static void onIONetworkInterfaceChanged(void* refcon, io_iterator_t iterator) noexcept
 	{
 		auto* self = static_cast<OsDependentDelegate_MacOS*>(refcon);
 		auto const lg = std::lock_guard{ self->_notificationLock };
@@ -531,6 +540,8 @@ private:
 		auto newList = Interfaces{};
 		self->refreshInterfaces(newList);
 		self->_commonDelegate.onNewInterfacesList(std::move(newList));
+
+		// Clear all other pending iterators (we processed all of them at the same time by refreshing all interfaces at once)
 		clearIterator(iterator);
 	}
 
@@ -584,8 +595,8 @@ private:
 			{
 				IONotificationPortSetDispatchQueue(*_notificationPort, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0));
 
-				IOServiceAddMatchingNotification(*_notificationPort, kIOMatchedNotification, IOServiceMatching("IONetworkController"), onIONetworkControllerListChanged, this, _controllerMatchIterator.get());
-				IOServiceAddMatchingNotification(*_notificationPort, kIOTerminatedNotification, IOServiceMatching("IONetworkController"), onIONetworkControllerListChanged, this, _controllerTerminateIterator.get());
+				IOServiceAddMatchingNotification(*_notificationPort, kIOMatchedNotification, IOServiceMatching(kIONetworkInterfaceClass), onIONetworkInterfaceChanged, this, _controllerMatchIterator.get());
+				IOServiceAddMatchingNotification(*_notificationPort, kIOTerminatedNotification, IOServiceMatching(kIONetworkInterfaceClass), onIONetworkInterfaceChanged, this, _controllerTerminateIterator.get());
 
 				// Clear the iterators discarding already discovered adapters, we'll manually list them anyway
 				clearIterator(*_controllerMatchIterator);

@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 ### Fixed
 - On macOS, correctly retrieve the user defined name of the interface.
+- On macOS, correctly detect plugged/unplugged adapters (partially broken since macOS 11).
 
 ## [1.2.5] - 2025-01-27
 ### Fixed
