@@ -85,6 +85,10 @@ public:
 
 	/** When the list of interfaces changed */
 	virtual void onNewInterfacesList(Interfaces&& interfaces) noexcept = 0;
+	/** When an interface was added */
+	virtual void onInterfaceAdded(std::string const& interfaceName, Interface&& interface) noexcept = 0;
+	/** When an interface was removed */
+	virtual void onInterfaceRemoved(std::string const& interfaceName) noexcept = 0;
 	/** When the Enabled state of an interface changed */
 	virtual void onEnabledStateChanged(std::string const& interfaceName, bool const isEnabled) noexcept = 0;
 	/** When the Connected state of an interface changed */
