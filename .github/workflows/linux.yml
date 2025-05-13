@@ -64,7 +64,7 @@ jobs:
     - name: Build
       # Build your program with the given configuration
       run: |
-        arch=$([ $(uname -m) = "arm64" ] && echo "aarch64" || echo "x86-64")
+        arch=$([ $(uname -m) = "aarch64" ] && echo "aarch64" || echo "x86-64")
         build_wrapper_bin="build-wrapper-linux-$arch"
         $build_wrapper_bin --out-dir _build cmake --build _build
     - name: SonarQube Scan
