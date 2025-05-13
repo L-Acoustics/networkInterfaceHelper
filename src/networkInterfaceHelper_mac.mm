@@ -77,10 +77,11 @@
 //       List all known keys: list
 //       List all enXX interface link keys: list State:/Network/Interface/en[^/]+/Link
 //       Monitor Link changes for en0 interface: n.add State:/Network/Interface/en0/Link
-#define DYNAMIC_STORE_NETWORK_STATE_STRING @"State:/Network/Interface/"
-#define DYNAMIC_STORE_NETWORK_SERVICE_STRING @"Setup:/Network/Service/"
+#define DYNAMIC_STORE_NETWORK_STATE_INTERFACE_STRING @"State:/Network/Interface/"
+#define DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING @"Setup:/Network/Service/"
 #define DYNAMIC_STORE_LINK_STRING @"/Link"
 #define DYNAMIC_STORE_IPV4_STRING @"/IPv4"
+#define DYNAMIC_STORE_IPV6_STRING @"/IPv6"
 #define DYNAMIC_STORE_INTERFACE_STRING @"/Interface"
 
 namespace la
@@ -215,7 +216,7 @@ private:
 
 	std::string getUserDefinedName(SCDynamicStoreRef const store, NSString const* const serviceID) const noexcept
 	{
-		auto const key = [NSString stringWithFormat:DYNAMIC_STORE_NETWORK_SERVICE_STRING @"%@", serviceID];
+		auto const key = [NSString stringWithFormat:DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING @"%@", serviceID];
 		auto const* const keyRef = static_cast<CFStringRef>(key);
 
 		auto const value = RefGuard{ SCDynamicStoreCopyValue(store, keyRef) };
@@ -230,10 +231,8 @@ private:
 		return std::string{};
 	}
 
-	Interface::IPAddressInfos getIPAddressInfoFromKey(SCDynamicStoreRef const store, CFStringRef const ipKeyRef) const noexcept
+	bool addIPAddressV4InfoFromKey(SCDynamicStoreRef const store, CFStringRef const ipKeyRef, Interface::IPAddressInfos& ipAddressInfos) const noexcept
 	{
-		auto ipAddressInfos = Interface::IPAddressInfos{};
-
 		auto const value = RefGuard{ SCDynamicStoreCopyValue(store, ipKeyRef) };
 
 		// Still have IP addresses
@@ -261,6 +260,7 @@ private:
 					try
 					{
 						ipAddressInfos.push_back(IPAddressInfo{ IPAddress{ std::string{ [address UTF8String] } }, IPAddress{ std::string{ [netmask UTF8String] } } });
+						return true;
 					}
 					catch (...)
 					{
@@ -269,25 +269,77 @@ private:
 			}
 		}
 
-		return ipAddressInfos;
+		return false;
+	}
+
+	bool addIPAddressV6InfoFromKey(SCDynamicStoreRef const store, CFStringRef const ipKeyRef, Interface::IPAddressInfos& ipAddressInfos) const noexcept
+	{
+		auto const value = RefGuard{ SCDynamicStoreCopyValue(store, ipKeyRef) };
+
+		// Still have IP addresses
+		if (value)
+		{
+			auto* const addresses = (NSArray*)[(__bridge NSDictionary const*)*value valueForKey:@"Addresses"];
+			auto* const prefixLengths = (NSArray*)[(__bridge NSDictionary const*)*value valueForKey:@"PrefixLength"];
+			// Only parse if we have the same count of addresses and prefixLengths
+			if ([addresses count] == [prefixLengths count])
+			{
+				for (auto ipIndex = NSUInteger{ 0u }; ipIndex < [addresses count]; ++ipIndex)
+				{
+					auto const* const address = (NSString*)[addresses objectAtIndex:ipIndex];
+					auto const* prefixLength = (NSNumber*)[prefixLengths objectAtIndex:ipIndex];
+					try
+					{
+						ipAddressInfos.push_back(IPAddressInfo{ IPAddress{ std::string{ [address UTF8String] } }, IPAddress{ IPAddress::packedV6FromPrefixLength([prefixLength unsignedCharValue]) } });
+						return true;
+					}
+					catch (...)
+					{
+					}
+				}
+			}
+		}
+
+		return false;
 	}
 
 	Interface::IPAddressInfos getIPAddressInfo(SCDynamicStoreRef const store, NSString const* const interfaceName) const noexcept
 	{
 		auto ipInfos = Interface::IPAddressInfos{};
 
-		auto const ipKey = [NSString stringWithFormat:DYNAMIC_STORE_NETWORK_STATE_STRING @"%@" DYNAMIC_STORE_IPV4_STRING, interfaceName];
-		auto const* const ipKeyRef = static_cast<CFStringRef>(ipKey);
-		ipInfos = getIPAddressInfoFromKey(store, ipKeyRef);
-
-		// In case there is no cable or it was just plugged in we won't have any IPv4 information available in the State keys, so try to get it from the Setup keys
-		if (ipInfos.empty())
+		// IPv4
 		{
-			if (auto const serviceID = getServiceForInterface(interfaceName); serviceID != nullptr)
+			auto const ipKey = [NSString stringWithFormat:DYNAMIC_STORE_NETWORK_STATE_INTERFACE_STRING @"%@" DYNAMIC_STORE_IPV4_STRING, interfaceName];
+			auto const* const ipKeyRef = static_cast<CFStringRef>(ipKey);
+			auto const inserted = addIPAddressV4InfoFromKey(store, ipKeyRef, ipInfos);
+
+			// In case there is no cable or it was just plugged in we won't have any IP information available in the State keys, so try to get it from the Setup keys
+			if (!inserted)
 			{
-				auto const ipKey = [NSString stringWithFormat:DYNAMIC_STORE_NETWORK_SERVICE_STRING @"%@" DYNAMIC_STORE_IPV4_STRING, serviceID];
-				auto const* const ipKeyRef = static_cast<CFStringRef>(ipKey);
-				ipInfos = getIPAddressInfoFromKey(store, ipKeyRef);
+				if (auto const serviceID = getServiceForInterface(interfaceName); serviceID != nullptr)
+				{
+					auto const ipKey = [NSString stringWithFormat:DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING @"%@" DYNAMIC_STORE_IPV4_STRING, serviceID];
+					auto const* const ipKeyRef = static_cast<CFStringRef>(ipKey);
+					addIPAddressV4InfoFromKey(store, ipKeyRef, ipInfos); // Don't care about return value here
+				}
+			}
+		}
+
+		// IPv6
+		{
+			auto const ipKey = [NSString stringWithFormat:DYNAMIC_STORE_NETWORK_STATE_INTERFACE_STRING @"%@" DYNAMIC_STORE_IPV6_STRING, interfaceName];
+			auto const* const ipKeyRef = static_cast<CFStringRef>(ipKey);
+			auto const inserted = addIPAddressV6InfoFromKey(store, ipKeyRef, ipInfos);
+
+			// In case there is no cable or it was just plugged in we won't have any IP information available in the State keys, so try to get it from the Setup keys
+			if (!inserted)
+			{
+				if (auto const serviceID = getServiceForInterface(interfaceName); serviceID != nullptr)
+				{
+					auto const ipKey = [NSString stringWithFormat:DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING @"%@" DYNAMIC_STORE_IPV6_STRING, serviceID];
+					auto const* const ipKeyRef = static_cast<CFStringRef>(ipKey);
+					addIPAddressV6InfoFromKey(store, ipKeyRef, ipInfos); // Don't care about return value here
+				}
 			}
 		}
 
@@ -369,7 +421,7 @@ private:
 			if (store)
 			{
 				// List all services and retrieve the attached interface
-				auto const serviceKeys = DYNAMIC_STORE_NETWORK_SERVICE_STRING @"[^/]+" DYNAMIC_STORE_INTERFACE_STRING;
+				auto const serviceKeys = DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING @"[^/]+" DYNAMIC_STORE_INTERFACE_STRING;
 				auto const* const serviceKeysRef = static_cast<CFStringRef>(serviceKeys);
 				auto servicesArray = RefGuard{ SCDynamicStoreCopyKeyList(*store, serviceKeysRef) };
 				if (servicesArray)
@@ -395,7 +447,7 @@ private:
 							{
 								// Extract the ID of the service from the keyname
 								auto const* const key = (__bridge NSString const*)keyRef;
-								auto const prefixLength = [DYNAMIC_STORE_NETWORK_SERVICE_STRING length];
+								auto const prefixLength = [DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING length];
 								auto const suffixLength = [DYNAMIC_STORE_INTERFACE_STRING length];
 								auto const* const serviceID = [key substringWithRange:NSMakeRange(prefixLength, [key length] - prefixLength - suffixLength)];
 
@@ -422,7 +474,7 @@ private:
 
 								// Check if interface is connected
 								{
-									auto const linkStateKey = [NSString stringWithFormat:DYNAMIC_STORE_NETWORK_STATE_STRING @"%@" DYNAMIC_STORE_LINK_STRING, deviceName];
+									auto const linkStateKey = [NSString stringWithFormat:DYNAMIC_STORE_NETWORK_STATE_INTERFACE_STRING @"%@" DYNAMIC_STORE_LINK_STRING, deviceName];
 									auto const* const linkStateKeyRef = static_cast<CFStringRef>(linkStateKey);
 									interface.isConnected = isInterfaceConnected(*store, linkStateKeyRef);
 								}
@@ -483,11 +535,11 @@ private:
 			auto const* const keyRef = static_cast<CFStringRef>(CFArrayGetValueAtIndex(changedKeys, index));
 			auto const* const key = (__bridge NSString const*)keyRef;
 
-			if ([key hasPrefix:DYNAMIC_STORE_NETWORK_STATE_STRING])
+			if ([key hasPrefix:DYNAMIC_STORE_NETWORK_STATE_INTERFACE_STRING])
 			{
 				if ([key hasSuffix:DYNAMIC_STORE_LINK_STRING])
 				{
-					auto const prefixLength = [DYNAMIC_STORE_NETWORK_STATE_STRING length];
+					auto const prefixLength = [DYNAMIC_STORE_NETWORK_STATE_INTERFACE_STRING length];
 					auto const suffixLength = [DYNAMIC_STORE_LINK_STRING length];
 					auto const* const interfaceName = [key substringWithRange:NSMakeRange(prefixLength, [key length] - prefixLength - suffixLength)];
 
@@ -497,10 +549,10 @@ private:
 					// Notify
 					self->_commonDelegate.onConnectedStateChanged(std::string{ [interfaceName UTF8String] }, isConnected);
 				}
-				else if ([key hasSuffix:DYNAMIC_STORE_IPV4_STRING])
+				else if ([key hasSuffix:DYNAMIC_STORE_IPV4_STRING] || [key hasSuffix:DYNAMIC_STORE_IPV6_STRING])
 				{
-					auto const prefixLength = [DYNAMIC_STORE_NETWORK_STATE_STRING length];
-					auto const suffixLength = [DYNAMIC_STORE_IPV4_STRING length];
+					auto const prefixLength = [DYNAMIC_STORE_NETWORK_STATE_INTERFACE_STRING length];
+					auto const suffixLength = ([key hasSuffix:DYNAMIC_STORE_IPV4_STRING]) ? [DYNAMIC_STORE_IPV4_STRING length] : [DYNAMIC_STORE_IPV6_STRING length];
 					auto const* const interfaceName = [key substringWithRange:NSMakeRange(prefixLength, [key length] - prefixLength - suffixLength)];
 
 					// Read IP addresses info
@@ -510,12 +562,12 @@ private:
 					self->_commonDelegate.onIPAddressInfosChanged(std::string{ [interfaceName UTF8String] }, std::move(ipAddressInfos));
 				}
 			}
-			else if ([key hasPrefix:DYNAMIC_STORE_NETWORK_SERVICE_STRING])
+			else if ([key hasPrefix:DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING])
 			{
-				if ([key hasSuffix:DYNAMIC_STORE_IPV4_STRING])
+				if ([key hasSuffix:DYNAMIC_STORE_IPV4_STRING] || [key hasSuffix:DYNAMIC_STORE_IPV6_STRING])
 				{
-					auto const prefixLength = [DYNAMIC_STORE_NETWORK_SERVICE_STRING length];
-					auto const suffixLength = [DYNAMIC_STORE_IPV4_STRING length];
+					auto const prefixLength = [DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING length];
+					auto const suffixLength = ([key hasSuffix:DYNAMIC_STORE_IPV4_STRING]) ? [DYNAMIC_STORE_IPV4_STRING length] : [DYNAMIC_STORE_IPV6_STRING length];
 					auto const* const serviceID = [key substringWithRange:NSMakeRange(prefixLength, [key length] - prefixLength - suffixLength)];
 					auto const* const interfaceName = self->getInterfaceForService(serviceID);
 
@@ -610,9 +662,11 @@ private:
 #if !__has_feature(objc_arc)
 			[scKeys autorelease];
 #endif
-			[scKeys addObject:DYNAMIC_STORE_NETWORK_STATE_STRING @"[^/]+" DYNAMIC_STORE_LINK_STRING]; // Monitor changes in the Link State
-			[scKeys addObject:DYNAMIC_STORE_NETWORK_STATE_STRING @"[^/]+" DYNAMIC_STORE_IPV4_STRING]; // Monitor changes in the IPv4 State
-			[scKeys addObject:DYNAMIC_STORE_NETWORK_SERVICE_STRING @"[^/]+" DYNAMIC_STORE_IPV4_STRING]; // Monitor changes in the IPv4 Setup
+			[scKeys addObject:DYNAMIC_STORE_NETWORK_STATE_INTERFACE_STRING @"[^/]+" DYNAMIC_STORE_LINK_STRING]; // Monitor changes in the Link State
+			[scKeys addObject:DYNAMIC_STORE_NETWORK_STATE_INTERFACE_STRING @"[^/]+" DYNAMIC_STORE_IPV4_STRING]; // Monitor changes in the IPv4 State
+			[scKeys addObject:DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING @"[^/]+" DYNAMIC_STORE_IPV4_STRING]; // Monitor changes in the IPv4 Setup
+			[scKeys addObject:DYNAMIC_STORE_NETWORK_STATE_INTERFACE_STRING @"[^/]+" DYNAMIC_STORE_IPV6_STRING]; // Monitor changes in the IPv6 State
+			[scKeys addObject:DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING @"[^/]+" DYNAMIC_STORE_IPV6_STRING]; // Monitor changes in the IPv6 Setup
 
 			/* Connect to the dynamic store */
 			auto ctx = SCDynamicStoreContext{ 0, this, NULL, NULL, NULL };
