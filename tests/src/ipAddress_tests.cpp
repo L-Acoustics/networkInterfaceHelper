@@ -291,6 +291,26 @@ TEST(IPAddress, StringConstructV6)
 		EXPECT_EQ((la::networkInterface::IPAddress::value_type_packed_v6{ 0x20010db800000000, 0x00080800200c417a }), ip.getIPV6Packed());
 	}
 
+	// Valid IPV6 string
+	{
+		auto ip = la::networkInterface::IPAddress{};
+		EXPECT_NO_THROW(ip = la::networkInterface::IPAddress{ "2001:0DB8:0:CD30::" }) << "Constructing from a valid string should not throw";
+
+		EXPECT_TRUE(ip.isValid()) << "V6 string constructed IPAddress should be valid";
+		EXPECT_TRUE(static_cast<bool>(ip)) << "V6 string constructed IPAddress should be valid";
+
+		EXPECT_NO_THROW(ip.getIPV6()) << "Trying to get IPV6 value should not throw";
+		EXPECT_NO_THROW((void)static_cast<la::networkInterface::IPAddress::value_type_v6>(ip)) << "Trying to get IPV6 value should not throw";
+		EXPECT_NO_THROW(ip.getIPV6Packed()) << "Trying to get IPV6Packed value should not throw";
+		EXPECT_NO_THROW((void)static_cast<la::networkInterface::IPAddress::value_type_packed_v6>(ip)) << "Trying to get IPV6Packed value should not throw";
+		EXPECT_THROW(ip.getIPV4(), std::invalid_argument) << "Trying to get IPV4 value should throw";
+		EXPECT_THROW((void)static_cast<la::networkInterface::IPAddress::value_type_v4>(ip), std::invalid_argument) << "Trying to get IPV4 value should throw";
+
+		EXPECT_EQ(la::networkInterface::IPAddress::Type::V6, ip.getType()) << "getType() for V6 IPAddress should be V6";
+
+		EXPECT_EQ((la::networkInterface::IPAddress::value_type_packed_v6{ 0x20010db80000cd30, 0x0000000000000000 }), ip.getIPV6Packed());
+	}
+
 	// Valid IPV4 Compatible string
 	{
 		auto ip = la::networkInterface::IPAddress{};
@@ -457,10 +477,22 @@ TEST(IPAddress, ToStringV6)
 		EXPECT_STREQ("2001:db8::8:800:200c:417a", adrsAsString.c_str());
 	}
 	{
+		auto const adrs = la::networkInterface::IPAddress{ "2001:DB8:0:0:0:0:0:0" };
+
+		auto const adrsAsString = static_cast<std::string>(adrs);
+		EXPECT_STREQ("2001:db8::", adrsAsString.c_str());
+	}
+	{
 		auto const adrs = la::networkInterface::IPAddress{ "FF01:0:0:0:0:0:0:101" };
 
 		auto const adrsAsString = static_cast<std::string>(adrs);
 		EXPECT_STREQ("ff01::101", adrsAsString.c_str());
+	}
+	{
+		auto const adrs = la::networkInterface::IPAddress{ "1:0:0:0:0:0:0:0" };
+
+		auto const adrsAsString = static_cast<std::string>(adrs);
+		EXPECT_STREQ("1::", adrsAsString.c_str());
 	}
 	{
 		auto const adrs = la::networkInterface::IPAddress{ "0:0:0:0:0:0:0:1" };
@@ -474,6 +506,15 @@ TEST(IPAddress, ToStringV6)
 		auto const adrsAsString = static_cast<std::string>(adrs);
 		EXPECT_STREQ("::", adrsAsString.c_str()) << "Unspecified address not properly displayed";
 	}
+}
+
+TEST(IPAddress, rfc5952_4_2_1)
+{
+	// Shorten as much as possible
+	auto const adrs = la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_v6{ 0x2001, 0x0DB8, 0x0000, 0x0000, 0x0000, 0x0000, 0x0002, 0x0001 } };
+
+	auto const adrsAsString = static_cast<std::string>(adrs);
+	EXPECT_STREQ("2001:db8::2:1", adrsAsString.c_str()) << "rfc5952 4.2.1 Not valid";
 }
 
 TEST(IPAddress, rfc5952_4_2_2)

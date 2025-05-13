@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - On macOS, correctly retrieve the user defined name of the interface.
 - On macOS, correctly detect plugged/unplugged adapters (partially broken since macOS 11).
+- IPv6 from string conversion not working if shortened at the end (e.g. 'acbd::').
 
 ## [1.2.5] - 2025-01-27
 ### Fixed

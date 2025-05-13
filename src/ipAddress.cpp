@@ -236,6 +236,13 @@ IPAddress::IPAddress(std::string const& ipString)
 			tokensV6.erase(tokensV6.begin());
 		}
 
+		// Special case to handle where the last token was empty, immediatelly preceeded by another empty token (ie. "xxx::").
+		if (tokensV6[tokensV6.size() - 1].empty() && tokensV6[tokensV6.size() - 2].empty())
+		{
+			// Remove the last empty token
+			tokensV6.erase(tokensV6.end() - 1);
+		}
+
 		// Compute the number of empty token sequences we have (get the index and length of the sequence) and check if we have an IPV4 embedded
 		auto emptyTokenCount = 0u;
 		auto emptyTokens = std::optional<std::pair<size_t, size_t>>{}; // First: index of the empty token, Second: number of empty tokens
