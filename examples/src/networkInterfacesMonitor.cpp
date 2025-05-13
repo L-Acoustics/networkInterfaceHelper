@@ -93,7 +93,15 @@ private:
 				std::cout << "  IP Addresses: " << std::endl;
 				for (auto const& ip : intfc.ipAddressInfos)
 				{
-					std::cout << "    " << static_cast<std::string>(ip.address) << " (" << static_cast<std::string>(ip.netmask) << ") -> " << static_cast<std::string>(ip.getNetworkBaseAddress()) << " / " << static_cast<std::string>(ip.getBroadcastAddress()) << std::endl;
+					if (ip.address.getType() == la::networkInterface::IPAddress::Type::V4)
+					{
+						std::cout << "    " << static_cast<std::string>(ip.address) << " (" << static_cast<std::string>(ip.netmask) << ") -> " << static_cast<std::string>(ip.getNetworkBaseAddress()) << " / " << static_cast<std::string>(ip.getBroadcastAddress()) << std::endl;
+					}
+					else
+					{
+						// IPv6
+						std::cout << "    " << static_cast<std::string>(ip.address) << "/" << std::to_string(la::networkInterface::IPAddress::prefixLengthFromPackedV6(ip.netmask.getIPV6Packed())) << " -> " << static_cast<std::string>(ip.getNetworkBaseAddress()) << std::endl;
+					}
 				}
 			}
 			if (!intfc.gateways.empty())
@@ -137,7 +145,15 @@ private:
 		{
 			for (auto const& ip : ipAddressInfos)
 			{
-				std::cout << "  " << static_cast<std::string>(ip.address) << " (" << static_cast<std::string>(ip.netmask) << ") -> " << static_cast<std::string>(ip.getNetworkBaseAddress()) << " / " << static_cast<std::string>(ip.getBroadcastAddress()) << std::endl;
+				if (ip.address.getType() == la::networkInterface::IPAddress::Type::V4)
+				{
+					std::cout << "  " << static_cast<std::string>(ip.address) << " (" << static_cast<std::string>(ip.netmask) << ") -> " << static_cast<std::string>(ip.getNetworkBaseAddress()) << " / " << static_cast<std::string>(ip.getBroadcastAddress()) << std::endl;
+				}
+				else
+				{
+					// IPv6
+					std::cout << "  " << static_cast<std::string>(ip.address) << "/" << std::to_string(la::networkInterface::IPAddress::prefixLengthFromPackedV6(ip.netmask.getIPV6Packed())) << " -> " << static_cast<std::string>(ip.getNetworkBaseAddress()) << std::endl;
+				}
 			}
 		}
 	}

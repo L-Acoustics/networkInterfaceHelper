@@ -96,7 +96,15 @@ int displayInterfaces()
 					std::cout << "  IP Addresses: " << std::endl;
 					for (auto const& info : intfc.ipAddressInfos)
 					{
-						std::cout << "    " << static_cast<std::string>(info.address) << " (" << static_cast<std::string>(info.netmask) << ") -> " << static_cast<std::string>(info.getNetworkBaseAddress()) << " / " << static_cast<std::string>(info.getBroadcastAddress()) << std::endl;
+						if (info.address.getType() == la::networkInterface::IPAddress::Type::V4)
+						{
+							std::cout << "    " << static_cast<std::string>(info.address) << " (" << static_cast<std::string>(info.netmask) << ") -> " << static_cast<std::string>(info.getNetworkBaseAddress()) << " / " << static_cast<std::string>(info.getBroadcastAddress()) << std::endl;
+						}
+						else
+						{
+							// IPv6
+							std::cout << "    " << static_cast<std::string>(info.address) << "/" << std::to_string(la::networkInterface::IPAddress::prefixLengthFromPackedV6(info.netmask.getIPV6Packed())) << " -> " << static_cast<std::string>(info.getNetworkBaseAddress()) << std::endl;
+						}
 					}
 				}
 				if (!intfc.gateways.empty())
