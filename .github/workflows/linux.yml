@@ -29,9 +29,10 @@ jobs:
 
     runs-on: ${{matrix.os}}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         submodules: recursive
+        fetch-depth: 0
 
     - name: Install job dependencies
       run : |
@@ -57,10 +58,24 @@ jobs:
       run: |
         echo "Generating CMake for Target: ${{matrix.target}}" 
         ./gen_cmake.sh -o _build -${{matrix.target}} -c Ninja
+    - name: Install Build Wrapper
+      uses: SonarSource/sonarqube-scan-action/install-build-wrapper@v5
 
     - name: Build
       # Build your program with the given configuration
-      run: cmake --build _build
+      run: |
+        arch=$([ $(uname -m) = "arm64" ] && echo "aarch64" || echo "x86-64")
+        build_wrapper_bin="build-wrapper-linux-$arch"
+        $build_wrapper_bin --out-dir _build cmake --build _build
+    - name: SonarQube Scan
+      uses: SonarSource/sonarqube-scan-action@v5
+      env:
+        SONAR_TOKEN: ${{ secret.SONAR_TOKEN }}
+      with:
+        args: >
+          --define sonar.cfamily.compile-commands="_build/compile_commands.json"
+          --define sonar.projectKey="l-acoustics_networkinterfacehelper"
+          --define sonar.organization="l-acoustics"
 
     - name: Test
       working-directory: ${{github.workspace}}/_build/tests/src
