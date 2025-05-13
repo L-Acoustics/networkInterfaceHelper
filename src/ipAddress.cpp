@@ -569,7 +569,32 @@ IPAddress operator+(IPAddress const& lhs, std::uint32_t const value)
 		case IPAddress::Type::V4:
 			return IPAddress{ lhs.getIPV4Packed() + value };
 		case IPAddress::Type::V6:
-			throw std::invalid_argument("IPV6 not supported yet");
+		{
+			auto v = lhs.getIPV6Packed();
+			// Check if adding value to the lower part of the IPV6 will overflow (ie. if we need to carry)
+			if ((std::numeric_limits<decltype(v.second)>::max() - v.second) < value)
+			{
+				auto lowerPart = std::numeric_limits<decltype(v.second)>::min();
+				auto const carry = value - (std::numeric_limits<decltype(v.second)>::max() - v.second);
+				// Check if adding carry to the upper part of the IPV6 will overflow (ie. if we need to carry back to the lower part)
+				if ((std::numeric_limits<decltype(v.first)>::max() - v.first) < carry)
+				{
+					auto const carryBack = carry - (std::numeric_limits<decltype(v.first)>::max() - v.first) - 1 /* Already incremented the lower part */;
+					v.first = std::numeric_limits<decltype(v.first)>::min();
+					lowerPart = carryBack;
+				}
+				else
+				{
+					v.first = static_cast<decltype(v.first)>(v.first + carry);
+				}
+				v.second = static_cast<decltype(v.second)>(lowerPart);
+			}
+			else
+			{
+				v.second = static_cast<decltype(v.second)>(v.second + value);
+			}
+			return IPAddress{ v };
+		}
 		default:
 			throw std::invalid_argument("Invalid Type");
 	}
@@ -582,7 +607,32 @@ IPAddress operator-(IPAddress const& lhs, std::uint32_t const value)
 		case IPAddress::Type::V4:
 			return IPAddress{ lhs.getIPV4Packed() - value };
 		case IPAddress::Type::V6:
-			throw std::invalid_argument("IPV6 not supported yet");
+		{
+			auto v = lhs.getIPV6Packed();
+			// Check if subtracting value from the lower part of the IPV6 will underflow (ie. if we need to borrow)
+			if (v.second < value)
+			{
+				auto lowerPart = std::numeric_limits<decltype(v.second)>::max();
+				auto const borrow = value - v.second;
+				// Check if subtracting borrow from the upper part of the IPV6 will underflow (ie. if we need to borrow back to the lower part)
+				if (v.first < borrow)
+				{
+					auto const borrowBack = borrow - v.first - 1 /* Already decremented the lower part */;
+					v.first = std::numeric_limits<decltype(v.first)>::max();
+					lowerPart = static_cast<decltype(v.second)>(lowerPart - borrowBack);
+				}
+				else
+				{
+					v.first = static_cast<decltype(v.first)>(v.first - borrow);
+				}
+				v.second = static_cast<decltype(v.second)>(lowerPart);
+			}
+			else
+			{
+				v.second = static_cast<decltype(v.second)>(v.second - value);
+			}
+			return IPAddress{ v };
+		}
 		default:
 			throw std::invalid_argument("Invalid Type");
 	}
@@ -593,10 +643,11 @@ IPAddress& operator++(IPAddress& lhs)
 	switch (lhs._type)
 	{
 		case IPAddress::Type::V4:
-			lhs.setValue(lhs.getIPV4Packed() + 1);
+			lhs = operator+(lhs, 1);
 			break;
 		case IPAddress::Type::V6:
-			throw std::invalid_argument("IPV6 not supported yet");
+			lhs = operator+(lhs, 1);
+			break;
 		default:
 			throw std::invalid_argument("Invalid Type");
 	}
@@ -609,10 +660,11 @@ IPAddress& operator--(IPAddress& lhs)
 	switch (lhs._type)
 	{
 		case IPAddress::Type::V4:
-			lhs.setValue(lhs.getIPV4Packed() - 1);
+			lhs = operator-(lhs, 1);
 			break;
 		case IPAddress::Type::V6:
-			throw std::invalid_argument("IPV6 not supported yet");
+			lhs = operator-(lhs, 1);
+			break;
 		default:
 			throw std::invalid_argument("Invalid Type");
 	}
@@ -627,7 +679,13 @@ IPAddress operator&(IPAddress const& lhs, IPAddress const& rhs)
 		case IPAddress::Type::V4:
 			return IPAddress{ lhs.getIPV4Packed() & rhs.getIPV4Packed() };
 		case IPAddress::Type::V6:
-			throw std::invalid_argument("IPV6 not supported yet");
+		{
+			auto l = lhs.getIPV6Packed();
+			auto const r = rhs.getIPV6Packed();
+			l.first &= r.first;
+			l.second &= r.second;
+			return IPAddress{ l };
+		}
 		default:
 			throw std::invalid_argument("Invalid Type");
 	}
@@ -640,7 +698,13 @@ IPAddress operator|(IPAddress const& lhs, IPAddress const& rhs)
 		case IPAddress::Type::V4:
 			return IPAddress{ lhs.getIPV4Packed() | rhs.getIPV4Packed() };
 		case IPAddress::Type::V6:
-			throw std::invalid_argument("IPV6 not supported yet");
+		{
+			auto l = lhs.getIPV6Packed();
+			auto const r = rhs.getIPV6Packed();
+			l.first |= r.first;
+			l.second |= r.second;
+			return IPAddress{ l };
+		}
 		default:
 			throw std::invalid_argument("Invalid Type");
 	}

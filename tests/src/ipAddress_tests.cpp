@@ -605,11 +605,33 @@ TEST(IPAddress, EqualityOperatorV4)
 	EXPECT_TRUE(ip1 == ipSame);
 }
 
+TEST(IPAddress, EqualityOperatorV6)
+{
+	auto const ip1 = la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200c:417a" };
+	auto const ip2 = la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200c:417b" };
+	auto const ipSame = la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200c:417a" };
+
+	EXPECT_FALSE(ip1 == ip2);
+	EXPECT_FALSE(ipSame == ip2);
+	EXPECT_TRUE(ip1 == ipSame);
+}
+
 TEST(IPAddress, DifferenceOperatorV4)
 {
 	auto const ip1 = la::networkInterface::IPAddress{ "192.168.0.1" };
 	auto const ip2 = la::networkInterface::IPAddress{ "192.168.0.2" };
 	auto const ipSame = la::networkInterface::IPAddress{ "192.168.0.1" };
+
+	EXPECT_TRUE(ip1 != ip2);
+	EXPECT_TRUE(ipSame != ip2);
+	EXPECT_FALSE(ip1 != ipSame);
+}
+
+TEST(IPAddress, DifferenceOperatorV6)
+{
+	auto const ip1 = la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200c:417a" };
+	auto const ip2 = la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200c:417b" };
+	auto const ipSame = la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200c:417a" };
 
 	EXPECT_TRUE(ip1 != ip2);
 	EXPECT_TRUE(ipSame != ip2);
@@ -630,11 +652,35 @@ TEST(IPAddress, InferiorOperatorV4)
 	EXPECT_TRUE(ip2 < ip4);
 }
 
+TEST(IPAddress, InferiorOperatorV6)
+{
+	auto const ip1 = la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200c:417a" };
+	auto const ip2 = la::networkInterface::IPAddress{ "2001:db8:0:2:8:800:200c:417b" };
+	auto const ipSame = la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200c:417a" };
+	auto const ip3 = la::networkInterface::IPAddress{ "2001:db8::" };
+	auto const ip4 = la::networkInterface::IPAddress{ "2001:db9:0:1:8:800:200c:417a" };
+
+	EXPECT_TRUE(ip1 < ip2);
+	EXPECT_FALSE(ip1 < ipSame);
+	EXPECT_TRUE(ip3 < ip1);
+	EXPECT_TRUE(ip2 < ip4);
+}
+
 TEST(IPAddress, InferiorEqualityOperatorV4)
 {
 	auto const ip1 = la::networkInterface::IPAddress{ "192.168.0.1" };
 	auto const ip2 = la::networkInterface::IPAddress{ "192.168.0.2" };
 	auto const ipSame = la::networkInterface::IPAddress{ "192.168.0.1" };
+
+	EXPECT_TRUE(ip1 <= ip2);
+	EXPECT_TRUE(ip1 <= ipSame);
+}
+
+TEST(IPAddress, InferiorEqualityOperatorV6)
+{
+	auto const ip1 = la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200c:417a" };
+	auto const ip2 = la::networkInterface::IPAddress{ "2001:db8:0:2:8:800:200c:417b" };
+	auto const ipSame = la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200c:417a" };
 
 	EXPECT_TRUE(ip1 <= ip2);
 	EXPECT_TRUE(ip1 <= ipSame);
@@ -647,11 +693,35 @@ TEST(IPAddress, AdditionOperatorV4)
 	EXPECT_TRUE((la::networkInterface::IPAddress{ "192.168.0.1" } + 0x10000) == la::networkInterface::IPAddress{ "192.169.0.1" });
 }
 
+TEST(IPAddress, AdditionOperatorV6)
+{
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "2001:db8:1:1:8:800:200b:417a" } + 1) == la::networkInterface::IPAddress{ "2001:db8:1:1:8:800:200b:417b" }) << "Simple addition failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "2001:db8:1:1:ffff:ffff:ffff:ffff" } + 1) == la::networkInterface::IPAddress{ "2001:db8:1:2::" }) << "Addition with lower part carry failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "2001:db8:1:1:ffff:ffff:ffff:fffe" } + 1) == la::networkInterface::IPAddress{ "2001:db8:1:1:ffff:ffff:ffff:ffff" }) << "Addition just before lower part carry failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "2001:db8:1:1:ffff:ffff:ffff:fffe" } + 2) == la::networkInterface::IPAddress{ "2001:db8:1:2::" }) << "Addition with lower part carry failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff" } + 1) == la::networkInterface::IPAddress{ "::" }) << "Addition with lower and upper part carry failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe" } + 1) == la::networkInterface::IPAddress{ "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff" }) << "Addition just before lower and upper part carry failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe" } + 2) == la::networkInterface::IPAddress{ "::" }) << "Addition with lower and upper part carry failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe" } + 3) == la::networkInterface::IPAddress{ "::1" }) << "Addition with lower and upper part carry failed";
+}
+
 TEST(IPAddress, SubstrationOperatorV4)
 {
 	EXPECT_TRUE((la::networkInterface::IPAddress{ "192.168.0.2" } - 1) == la::networkInterface::IPAddress{ "192.168.0.1" });
 	EXPECT_TRUE((la::networkInterface::IPAddress{ "192.168.1.0" } - 1) == la::networkInterface::IPAddress{ "192.168.0.255" });
 	EXPECT_TRUE((la::networkInterface::IPAddress{ "192.168.0.1" } - 0x10000) == la::networkInterface::IPAddress{ "192.167.0.1" });
+}
+
+TEST(IPAddress, SubstrationOperatorV6)
+{
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "2001:db8:1:1:8:800:200b:417a" } - 1) == la::networkInterface::IPAddress{ "2001:db8:1:1:8:800:200b:4179" }) << "Simple subtraction failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "2001:db8:1:1:8:800:200b:417a" } - 2) == la::networkInterface::IPAddress{ "2001:db8:1:1:8:800:200b:4178" }) << "Simple subtraction failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "2001:db8:1:1::" } - 1) == la::networkInterface::IPAddress{ "2001:db8:1:0:ffff:ffff:ffff:ffff" }) << "Subtraction with lower part borrow failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "2001:db8:1:1::1" } - 1) == la::networkInterface::IPAddress{ "2001:db8:1:1::" }) << "Subtraction just before lower part borrow failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "2001:db8:1:1::1" } - 2) == la::networkInterface::IPAddress{ "2001:db8:1:0:ffff:ffff:ffff:ffff" }) << "Subtraction with lower part borrow failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "::" } - 1) == la::networkInterface::IPAddress{ "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff" }) << "Subtraction with lower and upper part borrow failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "::" } - 2) == la::networkInterface::IPAddress{ "ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe" }) << "Subtraction with lower and upper part borrow failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "::1" } - 2) == la::networkInterface::IPAddress{ "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff" }) << "Subtraction with lower and upper part borrow failed";
 }
 
 TEST(IPAddress, IncrementOperatorV4)
@@ -663,6 +733,22 @@ TEST(IPAddress, IncrementOperatorV4)
 	EXPECT_TRUE(++ip2 == la::networkInterface::IPAddress{ "192.168.1.0" });
 }
 
+TEST(IPAddress, IncrementOperatorV6)
+{
+	auto ip1 = la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200C:417A" };
+	EXPECT_TRUE(++ip1 == la::networkInterface::IPAddress{ "2001:db8::8:800:200c:417b" }) << "Simple increment failed";
+	EXPECT_TRUE(++ip1 == la::networkInterface::IPAddress{ "2001:db8::8:800:200c:417c" }) << "Simple increment failed";
+
+	auto ip2 = la::networkInterface::IPAddress{ "2001:db8:1:1:ffff:ffff:ffff:ffff" };
+	EXPECT_TRUE(++ip2 == la::networkInterface::IPAddress{ "2001:db8:1:2::" }) << "Increment with lower part carry failed";
+	EXPECT_TRUE(++ip2 == la::networkInterface::IPAddress{ "2001:db8:1:2::1" }) << "Increment with lower part carry failed";
+
+	auto ip3 = la::networkInterface::IPAddress{ "2001:db8:1:1:ffff:ffff:ffff:fffe" };
+	EXPECT_TRUE(++ip3 == la::networkInterface::IPAddress{ "2001:db8:1:1:ffff:ffff:ffff:ffff" }) << "Increment just before lower part carry failed";
+	EXPECT_TRUE(++ip3 == la::networkInterface::IPAddress{ "2001:db8:1:2::" }) << "Increment with lower part carry failed";
+	EXPECT_TRUE(++ip3 == la::networkInterface::IPAddress{ "2001:db8:1:2::1" }) << "Increment with lower part carry failed";
+}
+
 TEST(IPAddress, DecrementOperatorV4)
 {
 	auto ip1 = la::networkInterface::IPAddress{ "192.168.0.2" };
@@ -672,16 +758,43 @@ TEST(IPAddress, DecrementOperatorV4)
 	EXPECT_TRUE(--ip2 == la::networkInterface::IPAddress{ "192.168.0.255" });
 }
 
+TEST(IPAddress, DecrementOperatorV6)
+{
+	auto ip1 = la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200C:417B" };
+	EXPECT_TRUE(--ip1 == la::networkInterface::IPAddress{ "2001:db8::8:800:200c:417a" }) << "Simple decrement failed";
+	EXPECT_TRUE(--ip1 == la::networkInterface::IPAddress{ "2001:db8::8:800:200c:4179" }) << "Simple decrement failed";
+
+	auto ip2 = la::networkInterface::IPAddress{ "2001:db8:1:2::" };
+	EXPECT_TRUE(--ip2 == la::networkInterface::IPAddress{ "2001:db8:1:1:ffff:ffff:ffff:ffff" }) << "Decrement with lower part borrow failed";
+	EXPECT_TRUE(--ip2 == la::networkInterface::IPAddress{ "2001:db8:1:1:ffff:ffff:ffff:fffe" }) << "Decrement with lower part borrow failed";
+
+	auto ip3 = la::networkInterface::IPAddress{ "2001:db8:1:2::1" };
+	EXPECT_TRUE(--ip3 == la::networkInterface::IPAddress{ "2001:db8:1:2::" }) << "Decrement just before lower part borrow failed";
+	EXPECT_TRUE(--ip3 == la::networkInterface::IPAddress{ "2001:db8:1:1:ffff:ffff:ffff:ffff" }) << "Decrement with lower part borrow failed";
+	EXPECT_TRUE(--ip3 == la::networkInterface::IPAddress{ "2001:db8:1:1:ffff:ffff:ffff:fffe" }) << "Decrement with lower part borrow failed";
+}
+
 TEST(IPAddress, AndOperatorV4)
 {
 	EXPECT_TRUE((la::networkInterface::IPAddress{ "192.168.1.1" } & la::networkInterface::IPAddress{ "255.255.0.0" }) == la::networkInterface::IPAddress{ "192.168.0.0" });
 	EXPECT_TRUE((la::networkInterface::IPAddress{ "192.168.20.100" } & la::networkInterface::IPAddress{ "255.255.240.0" }) == la::networkInterface::IPAddress{ "192.168.16.0" });
 }
 
+TEST(IPAddress, AndOperatorV6)
+{
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200C:417A" } & la::networkInterface::IPAddress{ "FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF" }) == la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200c:417a" });
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "2001:db8::8:800:200C:417A" } & la::networkInterface::IPAddress{ "FFFF:FFFF:FFFF:FFFF::" }) == la::networkInterface::IPAddress{ "2001:db8::" });
+}
+
 TEST(IPAddress, OrOperatorV4)
 {
 	EXPECT_TRUE((la::networkInterface::IPAddress{ "192.168.1.0" } | la::networkInterface::IPAddress{ "0.0.1.1" }) == la::networkInterface::IPAddress{ "192.168.1.1" });
 	EXPECT_TRUE((la::networkInterface::IPAddress{ "192.168.1.0" } | la::networkInterface::IPAddress{ "0.0.2.0" }) == la::networkInterface::IPAddress{ "192.168.3.0" });
+}
+
+TEST(IPAddress, OrOperatorV6)
+{
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200C:417A" } | la::networkInterface::IPAddress{ "FFFF:0:1234:5678::" }) == la::networkInterface::IPAddress{ "ffff:db8:1234:5678:8:800:200c:417a" });
 }
 
 TEST(IPAddress, PackV4)

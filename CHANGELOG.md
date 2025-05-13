@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Missing IPv6 operators (comparison, addition, substraction).
+
 ### Fixed
 - On macOS, correctly retrieve the user defined name of the interface.
 - On macOS, correctly detect plugged/unplugged adapters (partially broken since macOS 11).

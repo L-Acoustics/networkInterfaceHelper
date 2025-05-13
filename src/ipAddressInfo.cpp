@@ -94,7 +94,7 @@ IPAddress IPAddressInfo::getBroadcastAddress() const
 			return IPAddress{ address.getIPV4Packed() | ~netmask.getIPV4Packed() };
 		}
 		case IPAddress::Type::V6:
-			throw std::invalid_argument("IPV6 not supported yet");
+			throw std::invalid_argument("IPV6 doesn't support broadcast");
 		default:
 			throw std::invalid_argument("Invalid Type");
 	}
