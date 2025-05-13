@@ -60,7 +60,8 @@ static void checkValidIPAddressInfo(IPAddress const& address, IPAddress const& n
 			validateNetmaskV4(netmask);
 			break;
 		case IPAddress::Type::V6:
-			throw std::invalid_argument("IPV6 not supported yet");
+			validateNetmaskV6(netmask);
+			break;
 		default:
 			throw std::invalid_argument("Invalid Type");
 	}
@@ -73,11 +74,9 @@ IPAddress IPAddressInfo::getNetworkBaseAddress() const
 	switch (address.getType())
 	{
 		case IPAddress::Type::V4:
-		{
-			return IPAddress{ address.getIPV4Packed() & netmask.getIPV4Packed() };
-		}
+			return IPAddress{ address & netmask };
 		case IPAddress::Type::V6:
-			throw std::invalid_argument("IPV6 not supported yet");
+			return IPAddress{ address & netmask };
 		default:
 			throw std::invalid_argument("Invalid Type");
 	}

@@ -168,5 +168,17 @@ static inline void validateNetmaskV4(IPAddress const& netmask)
 	}
 }
 
+static inline void validateNetmaskV6(IPAddress const& netmask)
+{
+	// Validate netmask by converting it to prefix length then back to packed and compare (they should be the same)
+	auto const packedMask = netmask.getIPV6Packed();
+	auto const prefixLength = IPAddress::prefixLengthFromPackedV6(packedMask);
+	auto const packedMaskFromPrefix = IPAddress::packedV6FromPrefixLength(prefixLength);
+	if (packedMask != packedMaskFromPrefix)
+	{
+		throw std::invalid_argument("netmask is not contiguous");
+	}
+}
+
 } // namespace networkInterface
 } // namespace la

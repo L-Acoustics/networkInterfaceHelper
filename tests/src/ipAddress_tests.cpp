@@ -589,9 +589,32 @@ TEST(IPAddress, ValidateNetmaskV4)
 	EXPECT_NO_THROW(la::networkInterface::validateNetmaskV4(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v4{ 0xFFFFFFFF } }));
 
 	EXPECT_THROW(la::networkInterface::validateNetmaskV4(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v4{ 0x00000000 } }), std::invalid_argument) << "Empty mask should throw";
-	EXPECT_THROW(la::networkInterface::validateNetmaskV4(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v4{ 0x00000000 } }), std::invalid_argument) << "Empty mask should throw";
 	EXPECT_THROW(la::networkInterface::validateNetmaskV4(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v4{ 0x40000000 } }), std::invalid_argument) << "Mask doesn't has MSB set";
+	EXPECT_THROW(la::networkInterface::validateNetmaskV4(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v4{ 0x0000000F } }), std::invalid_argument) << "Mask doesn't has MSB set";
 	EXPECT_THROW(la::networkInterface::validateNetmaskV4(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v4{ 0xF4000000 } }), std::invalid_argument) << "Mask starts then stops (not contiguous)";
+}
+
+TEST(IPAddress, ValidateNetmaskV6)
+{
+	EXPECT_NO_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0x8000000000000000, 0x0000000000000000 } }));
+	EXPECT_NO_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xC000000000000000, 0x0000000000000000 } }));
+	EXPECT_NO_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xF800000000000000, 0x0000000000000000 } }));
+	EXPECT_NO_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFF0, 0x0000000000000000 } }));
+	EXPECT_NO_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0x0000000000000000 } }));
+	EXPECT_NO_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0x8000000000000000 } }));
+	EXPECT_NO_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0xC000000000000000 } }));
+	EXPECT_NO_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0xF800000000000000 } }));
+	EXPECT_NO_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFF0 } }));
+	EXPECT_NO_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFE } }));
+	EXPECT_NO_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF } }));
+
+	EXPECT_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0x4000000000000000, 0x0000000000000000 } }), std::invalid_argument) << "Mask doesn't has MSB set";
+	EXPECT_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0x4000000000000000, 0x000000000000000F } }), std::invalid_argument) << "Mask doesn't has MSB set";
+	EXPECT_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0x0000000000000000, 0x000000000000000F } }), std::invalid_argument) << "Mask doesn't has MSB set";
+	EXPECT_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xF400000000000000, 0x0000000000000000 } }), std::invalid_argument) << "Mask starts then stops (not contiguous)";
+	EXPECT_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xF000000000000000, 0xF000000000000000 } }), std::invalid_argument) << "Mask starts then stops (not contiguous)";
+	EXPECT_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0x4000000000000000 } }), std::invalid_argument) << "Mask starts then stops (not contiguous)";
+	EXPECT_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0x000000000000000F } }), std::invalid_argument) << "Mask starts then stops (not contiguous)";
 }
 
 TEST(IPAddress, EqualityOperatorV4)
@@ -807,10 +830,32 @@ TEST(IPAddress, UnpackV4)
 	EXPECT_EQ((la::networkInterface::IPAddress::value_type_v4{ 192u, 168u, 0u, 1u }), la::networkInterface::IPAddress::unpack(la::networkInterface::IPAddress::value_type_packed_v4{ 0xC0A80001 }));
 }
 
+TEST(IPAddress, packedV6FromPrefixLength)
+{
+	EXPECT_EQ((la::networkInterface::IPAddress::value_type_packed_v6{ 0x0000000000000000, 0x0000000000000000 }), la::networkInterface::IPAddress::packedV6FromPrefixLength(0));
+	EXPECT_EQ((la::networkInterface::IPAddress::value_type_packed_v6{ 0x8000000000000000, 0x0000000000000000 }), la::networkInterface::IPAddress::packedV6FromPrefixLength(1));
+	EXPECT_EQ((la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFE, 0x0000000000000000 }), la::networkInterface::IPAddress::packedV6FromPrefixLength(63));
+	EXPECT_EQ((la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0x0000000000000000 }), la::networkInterface::IPAddress::packedV6FromPrefixLength(64));
+	EXPECT_EQ((la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0x8000000000000000 }), la::networkInterface::IPAddress::packedV6FromPrefixLength(65));
+	EXPECT_EQ((la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFE }), la::networkInterface::IPAddress::packedV6FromPrefixLength(127));
+	EXPECT_EQ((la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF }), la::networkInterface::IPAddress::packedV6FromPrefixLength(128));
+}
+
+TEST(IPAddress, prefixLengthFromPackedV6)
+{
+	EXPECT_EQ(0, la::networkInterface::IPAddress::prefixLengthFromPackedV6(la::networkInterface::IPAddress::value_type_packed_v6{ 0x0000000000000000, 0x0000000000000000 }));
+	EXPECT_EQ(1, la::networkInterface::IPAddress::prefixLengthFromPackedV6(la::networkInterface::IPAddress::value_type_packed_v6{ 0x8000000000000000, 0x0000000000000000 }));
+	EXPECT_EQ(63, la::networkInterface::IPAddress::prefixLengthFromPackedV6(la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFE, 0x0000000000000000 }));
+	EXPECT_EQ(64, la::networkInterface::IPAddress::prefixLengthFromPackedV6(la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0x0000000000000000 }));
+	EXPECT_EQ(65, la::networkInterface::IPAddress::prefixLengthFromPackedV6(la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0x8000000000000000 }));
+	EXPECT_EQ(127, la::networkInterface::IPAddress::prefixLengthFromPackedV6(la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFE }));
+	EXPECT_EQ(128, la::networkInterface::IPAddress::prefixLengthFromPackedV6(la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF }));
+}
+
 /* ************************************************************ */
 /* IPAddressInfo Tests                                          */
 /* ************************************************************ */
-TEST(IPAddressInfo, NetworkBaseAddress)
+TEST(IPAddressInfo, NetworkBaseAddressV4)
 {
 	// Valid IPAddressInfo
 	{
@@ -846,6 +891,25 @@ TEST(IPAddressInfo, NetworkBaseAddress)
 
 	// TODO: Complete with invalid values
 }
+
+TEST(IPAddressInfo, NetworkBaseAddressV6)
+{
+	// Valid IPAddressInfo
+	{
+		auto const info = la::networkInterface::IPAddressInfo{ la::networkInterface::IPAddress{ "2001:db8:0:1:8:800:200C:417A" }, la::networkInterface::IPAddress{ la::networkInterface::IPAddress::packedV6FromPrefixLength(64) } };
+
+		ASSERT_NO_THROW(info.getNetworkBaseAddress());
+		EXPECT_STREQ("2001:db8:0:1::", static_cast<std::string>(info.getNetworkBaseAddress()).c_str());
+	}
+	// Valid IPAddressInfo
+	{
+		auto const info = la::networkInterface::IPAddressInfo{ la::networkInterface::IPAddress{ "fe80::1c74:66e8:4a84:f972" }, la::networkInterface::IPAddress{ la::networkInterface::IPAddress::packedV6FromPrefixLength(120) } };
+
+		ASSERT_NO_THROW(info.getNetworkBaseAddress());
+		EXPECT_STREQ("fe80::1c74:66e8:4a84:f900", static_cast<std::string>(info.getNetworkBaseAddress()).c_str());
+	}
+}
+
 
 TEST(IPAddressInfo, BroadcastAddress)
 {

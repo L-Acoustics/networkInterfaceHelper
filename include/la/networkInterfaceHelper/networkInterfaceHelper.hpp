@@ -215,6 +215,12 @@ public:
 	/** Unpack an IP of Type::V6. */
 	static value_type_v6 unpack(value_type_packed_v6 const ipv6) noexcept;
 
+	/** Helper method to generate IPAddress::value_type_packed_v6 from prefix length. */
+	static IPAddress::value_type_packed_v6 packedV6FromPrefixLength(std::uint8_t const length) noexcept;
+
+	/** Helper method to retrieve the prefix length from IPAddress::value_type_packed_v6. */
+	static std::uint8_t prefixLengthFromPackedV6(IPAddress::value_type_packed_v6 const packed) noexcept;
+
 	/** Hash functor to be used for std::hash */
 	struct hash
 	{

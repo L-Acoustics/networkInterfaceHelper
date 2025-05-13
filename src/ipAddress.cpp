@@ -47,6 +47,11 @@
 #include <cassert>
 #include <limits> // numeric_limits
 #include <optional>
+#ifdef __cpp_lib_bitops
+#	include <bit>
+#else // !__cpp_lib_bitops
+#	include <bitset>
+#endif // __cpp_lib_bitops
 
 namespace la
 {
@@ -758,6 +763,64 @@ IPAddress::value_type_v6 IPAddress::unpack(value_type_packed_v6 const ipv6) noex
 	ip[7] = ipv6.second & 0xFFFF;
 
 	return ip;
+}
+
+IPAddress::value_type_packed_v6 IPAddress::packedV6FromPrefixLength(std::uint8_t const length) noexcept
+{
+	if (length == 64)
+	{
+		return IPAddress::value_type_packed_v6{ std::integral_constant<std::uint64_t, 0xffffffffffffffff>::value, std::integral_constant<std::uint64_t, 0>::value };
+	}
+	else if (length == 128)
+	{
+		return IPAddress::value_type_packed_v6{ std::integral_constant<std::uint64_t, 0xffffffffffffffff>::value, std::integral_constant<std::uint64_t, 0xffffffffffffffff>::value };
+	}
+	else if (length < 64)
+	{
+		return IPAddress::value_type_packed_v6{ ~(~std::uint64_t(0) >> length), std::integral_constant<std::uint64_t, 0>::value };
+	}
+	else
+	{
+		return IPAddress::value_type_packed_v6{ std::integral_constant<std::uint64_t, 0xffffffffffffffff>::value, ~(~std::uint64_t(0) >> (length - 64)) };
+	}
+}
+
+std::uint8_t IPAddress::prefixLengthFromPackedV6(IPAddress::value_type_packed_v6 const packed) noexcept
+{
+#ifdef __cpp_lib_bitops
+	// C++20
+	auto const firstPartCount = static_cast<std::uint8_t>(std::countl_one(static_cast<std::uint64_t>(packed.first)));
+	auto const secondPartCount = static_cast<std::uint8_t>(std::countl_one(static_cast<std::uint64_t>(packed.second)));
+#else
+	// C++17
+	auto const countOnes = [](std::bitset<64> const bits)
+	{
+		auto count = 0u;
+		for (auto i = 63; i >= 0; --i)
+		{
+			if (bits.test(i))
+			{
+				count++;
+			}
+			else
+			{
+				break;
+			}
+		}
+		return count;
+	};
+	auto const firstPartCount = countOnes(std::bitset<64>(packed.first));
+	auto const secondPartCount = countOnes(std::bitset<64>(packed.second));
+#endif
+
+	if (firstPartCount == 64)
+	{
+		return 64u + secondPartCount;
+	}
+	else
+	{
+		return firstPartCount;
+	}
 }
 
 std::size_t IPAddress::hash::operator()(IPAddress const& ip) const
