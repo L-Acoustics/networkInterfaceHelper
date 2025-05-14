@@ -353,7 +353,7 @@ private:
 		if (wmiSucceeded)
 		{
 			ULONG ulSize = 0;
-			ULONG family = AF_INET; // AF_UNSPEC for ipV4 and ipV6, AF_INET6 for ipV6 only
+			ULONG family = AF_UNSPEC; // AF_UNSPEC for ipV4 and ipV6, AF_INET6 for ipV6 only
 
 			GetAdaptersAddresses(family, GAA_FLAG_INCLUDE_PREFIX | GAA_FLAG_INCLUDE_GATEWAYS, nullptr, nullptr, &ulSize); // Make an initial call to get the needed size to allocate
 			auto buffer = std::make_unique<std::uint8_t[]>(ulSize);
@@ -445,7 +445,7 @@ private:
 		// Unfortunately, GetAdaptersAddresses (even GetAdaptersInfo) is very limited and can only retrieve NICs that have IP enabled (and are active)
 
 		ULONG ulSize = 0;
-		ULONG family = AF_INET; // AF_UNSPEC for ipV4 and ipV6, AF_INET6 for ipV6 only
+		ULONG family = AF_UNSPEC; // AF_UNSPEC for ipV4 and ipV6, AF_INET6 for ipV6 only
 
 		GetAdaptersAddresses(family, GAA_FLAG_INCLUDE_PREFIX | GAA_FLAG_INCLUDE_GATEWAYS, nullptr, nullptr, &ulSize); // Make an initial call to get the needed size to allocate
 		auto buffer = std::make_unique<std::uint8_t[]>(ulSize);
