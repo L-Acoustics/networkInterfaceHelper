@@ -47,11 +47,16 @@
 #include <cassert>
 #include <limits> // numeric_limits
 #include <optional>
-#ifdef __cpp_lib_bitops
+
+#if !defined(__GNUC__) || __GNUC__ >= 10 /* <version> is not present in earier versions of gcc (not sure which version exactly, using 10 here) */
+#	include <version>
+#endif
+
+#if __cpp_lib_bitops >= 201907L
 #	include <bit>
-#else // !__cpp_lib_bitops
+#else // __cpp_lib_bitops <201907L
 #	include <bitset>
-#endif // __cpp_lib_bitops
+#endif // __cpp_lib_bitops >= 201907L
 
 namespace la
 {
@@ -787,11 +792,11 @@ IPAddress::value_type_packed_v6 IPAddress::packedV6FromPrefixLength(std::uint8_t
 
 std::uint8_t IPAddress::prefixLengthFromPackedV6(IPAddress::value_type_packed_v6 const packed) noexcept
 {
-#ifdef __cpp_lib_bitops
+#if __cpp_lib_bitops >= 201907L
 	// C++20
 	auto const firstPartCount = static_cast<std::uint8_t>(std::countl_one(static_cast<std::uint64_t>(packed.first)));
 	auto const secondPartCount = static_cast<std::uint8_t>(std::countl_one(static_cast<std::uint64_t>(packed.second)));
-#else
+#else // __cpp_lib_bitops <201907L
 	// C++17
 	auto const countOnes = [](std::bitset<64> const bits)
 	{
@@ -811,7 +816,7 @@ std::uint8_t IPAddress::prefixLengthFromPackedV6(IPAddress::value_type_packed_v6
 	};
 	auto const firstPartCount = countOnes(std::bitset<64>(packed.first));
 	auto const secondPartCount = countOnes(std::bitset<64>(packed.second));
-#endif
+#endif // __cpp_lib_bitops >= 201907L
 
 	if (firstPartCount == 64)
 	{
