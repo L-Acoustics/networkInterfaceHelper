@@ -411,7 +411,8 @@ private:
 
 	void refreshInterfaces(Interfaces& interfaces) noexcept
 	{
-		@autoreleasepool {
+		@autoreleasepool
+		{
 			clearInterfaceToServiceMapping();
 
 			// Create a temporary dynamic store session
