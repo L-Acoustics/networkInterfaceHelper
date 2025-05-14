@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Missing IPv6 operators to `IPAddress` (comparison, addition, substraction).
 - Support for IPv6 in `IPAddressInfo`.
-- [macOS] Added detection of IPv6 addresses.
+- [Windows/macOS] Added detection of IPv6 addresses.
 
 ### Fixed
 - On macOS, correctly retrieve the user defined name of the interface.
