@@ -159,9 +159,6 @@ private:
 			/* For an AF_INET* interface address, get the IP */
 			else if (family == AF_INET || family == AF_INET6)
 			{
-				if (family == AF_INET6) // Right now, we don't want ipv6 addresses
-					continue;
-
 				// Check if interface has been recorded from AF_PACKET
 				auto intfcIt = interfaces.find(ifa->ifa_name);
 				if (intfcIt != interfaces.end())
