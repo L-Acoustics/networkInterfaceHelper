@@ -3,21 +3,22 @@ name: Macos
 on:
   push:
     branches: [ dev, main ]
-  # pull_request:
-  #   branches: [ dev ]
-  #   paths-ignore:
-  #     - 'Docker'
-  #     - '**/README.md'
-  #     - '**/LICENCE'
   workflow_call:
+
+env:
+  NUGET_FEED_USENAME: github
+  NUGET_FEED_URL: https://nuget.pkg.github.com/${{github.repository_owner}}/index.json 
+  lib_name: la_networkInterfaceHelper
+  build_dir: _build
+  GITHUB_TOKEN: ${{secrets.NUGET_PAT}}
 
 jobs:
   macos-build-and-test:
     strategy:
       fail-fast: false
       matrix:
-        target: ["release","debug"]
-        os: ["macos-13","macos-14"]
+        config: ["release","debug"]
+        os: ["macos-14"]
 
     runs-on: ${{matrix.os}}
     steps:
@@ -25,37 +26,40 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Install job dependencies
-      run : |
-        brew install ninja
-        brew install wget
-        brew install bash
-        brew install grep
-        echo "$(brew --prefix grep)/libexec/gnubin" >> $GITHUB_PATH
+    - uses: ./.github/actions/la-swig
+      name: Install custom SWIG
+      id: la_swig
 
-    - name: Verify CMake
-      run : |
-        set -xe # exit on first error
-        which cmake &> /dev/null 
-        CMAKE_VERSION=$(cmake --version | awk '/version/ {print $3}')
-        echo "Using cmake: ${CMAKE_VERSION}"
+    - name: Configure runner
+      uses: ./.github/actions/la-configure
+      with:
+        os: macos
 
     - name: Configure CMake
       shell: bash
       run: |
-        echo "Generating CMake for Target: ${{matrix.target}}" 
-        ./gen_cmake.sh -o _build -${{matrix.target}} -c Ninja
+        echo "Generating CMake for Configuration : ${{matrix.config}}" 
 
-    - name: Build
+        ./gen_cmake.sh -o ${{env.build_dir}} -${{matrix.config}} -c Ninja -build-csharp -all-archs -- \
+          "-DNUGET_PUBLISH_SOURCE_URL=${{env.NUGET_FEED_URL}}" \
+          "-DSWIG_DIR=${{steps.la_swig.outputs.swig_dir}}" \
+          "-DCU_REPO_URL=https://github.com/${{github.repository}}" \
+          "-DSWIG_EXECUTABLE=${{steps.la_swig.outputs.swig_exec}}" 
+
+    - name: Build tests
       # Build your program with the given configuration
-      run: cmake --build _build
+      run: cmake --build ${{env.build_dir}} --target Tests
 
     - name: Test
-      working-directory: ${{github.workspace}}/_build/tests/src
+      working-directory: ${{github.workspace}}/${{env.build_dir}}/tests/src
       shell: bash
       run: |
         test_cmd="./Tests --gtest_filter=-MANUAL*"
-        if [ "${{matrix.target}}" = "debug" ]; then
+        if [ "${{matrix.config}}" = "debug" ]; then
           test_cmd="./Tests-d --gtest_filter=-MANUAL*"
         fi
         eval $test_cmd 
+
+    - name: Build all
+      # Build your program with the given configuration
+      run: cmake --build ${{env.build_dir}} 

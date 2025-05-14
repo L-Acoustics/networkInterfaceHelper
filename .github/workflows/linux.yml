@@ -1,30 +1,41 @@
+###### DESCRIPTION
+#
+#
+# This workflow builds and test the la library project for the following platform and config :
+# -- Ubuntu-22.04 (x86) [release & debug]
+# -- Ubuntu-22.04 (arm) [release & debug]
+#
+# This workflow is triggered on push to `dev` and `main` branches or on workflow_call 
+# The swig workflow to fetch the swig binaries is called and must execute successfully to continue
+#
+#
+
 name: Linux
 
 on:
   push:
     branches: [ dev, main ]
-  # pull_request:
-  #   branches: [ dev ]
-  #   paths-ignore:
-  #     - 'Docker'
-  #     - '**/README.md'
-  #     - '**/LICENCE'
   workflow_call:
     
 permissions:
   contents: write
   pull-requests: write
   checks: write
+  packages: write
+
+env:
+  NUGET_FEED_USENAME: github
+  NUGET_FEED_URL: https://nuget.pkg.github.com/${{github.repository_owner}}/index.json 
+  lib_name: la_networkInterfaceHelper
+  build_dir: _build
+  GITHUB_TOKEN: ${{secrets.NUGET_PAT}}
 
 jobs:
   linux-build-and-test:
-    # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
-    # You can convert this to a matrix build if you need cross-platform coverage.
-    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
     strategy:
       fail-fast: false
       matrix:
-        target: ["release","debug"]
+        config: ["release","debug"]
         os: ["ubuntu-22.04","ubuntu-22.04-arm"]
 
     runs-on: ${{matrix.os}}
@@ -33,41 +44,44 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Install job dependencies
-      run : |
-          sudo apt-get update
-          sudo apt-get install -y ninja-build wget build-essential
+    - uses: ./.github/actions/la-swig
+      name: Install custom SWIG
+      id: la_swig
 
-    - name: Install CMake 3.31.5
-      shell: bash
-      run: |
-        set +xe
-        which cmake &> /dev/null 
-        if [ $? -ne 0 ]; then
-          arch=$([ $(uname -m) = "arm64" ] && echo "aarch64" || echo "x86_64")
-          cmake_script="cmake-3.31.5-linux-$arch.sh"
-          wget "https://github.com/Kitware/CMake/releases/download/v3.31.5/$cmake_script"
-          chmod +x $cmake_script
-          sudo ./$cmake_script --skip-license --prefix=/usr/local
-        fi
-        CMAKE_VERSION=$(cmake --version | awk '/version/ {print $3}')
-        echo "Using cmake: ${CMAKE_VERSION}"
+    - name: Configure runner
+      uses: ./.github/actions/la-configure
+      with:
+        os: linux
+
     - name: Configure CMake
       shell: bash
       run: |
-        echo "Generating CMake for Target: ${{matrix.target}}" 
-        ./gen_cmake.sh -o _build -${{matrix.target}} -c Ninja
+        echo "Generating CMake for config: ${{matrix.config}}" 
 
-    - name: Build
+        arch=$([ ${{runner.arch}} = "X64" ] && echo "x64" || echo "arm64")
+        ./gen_cmake.sh -o ${{env.build_dir}} -${{matrix.config}} -c Ninja -build-csharp -arch $arch -- \
+          "-DNUGET_PUBLISH_SOURCE_URL=${{env.NUGET_FEED_URL}}" \
+          "-DSWIG_DIR=${{steps.la_swig.outputs.swig_dir}}" \
+          "-DCU_REPO_URL=https://github.com/${{github.repository}}" \
+          "-DSWIG_EXECUTABLE=${{steps.la_swig.outputs.swig_exec}}" 
+
+
+    - name: Build test
       # Build your program with the given configuration
-      run: cmake --build _build
+      run: cmake --build ${{env.build_dir}} --target Tests
 
     - name: Test
-      working-directory: ${{github.workspace}}/_build/tests/src
+      working-directory: ${{github.workspace}}/${{env.build_dir}}/tests/src
       shell: bash
       run: |
         test_cmd="./Tests --gtest_filter=-MANUAL*"
-        if [ "${{matrix.target}}" = "debug" ]; then
+        if [ "${{matrix.config}}" = "debug" ]; then
           test_cmd="./Tests-d --gtest_filter=-MANUAL*"
         fi
         eval $test_cmd 
+
+    - name: Build all
+      # Build your program with the given configuration
+      run: cmake --build ${{env.build_dir}} --target all
+
+ 
