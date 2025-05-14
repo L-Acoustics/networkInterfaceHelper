@@ -306,13 +306,13 @@ private:
 	}
 
 	/** When an interface was added */
-	virtual void onInterfaceAdded(std::string const& interfaceName, Interface&& interface) noexcept override
+	virtual void onInterfaceAdded(std::string const& interfaceName, Interface&& intfc) noexcept override
 	{
 		// Lock
 		auto const lg = std::lock_guard(_lock);
 
 		// Add the interface to the list
-		auto const [it, inserted] = _networkInterfaces.emplace(interfaceName, std::move(interface));
+		auto const [it, inserted] = _networkInterfaces.emplace(interfaceName, std::move(intfc));
 		if (inserted)
 		{
 			notifyObserversMethod(&Observer::onInterfaceAdded, it->second);

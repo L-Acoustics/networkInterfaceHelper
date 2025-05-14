@@ -820,11 +820,11 @@ std::uint8_t IPAddress::prefixLengthFromPackedV6(IPAddress::value_type_packed_v6
 
 	if (firstPartCount == 64)
 	{
-		return 64u + secondPartCount;
+		return static_cast<std::uint8_t>(64u + secondPartCount);
 	}
 	else
 	{
-		return firstPartCount;
+		return static_cast<std::uint8_t>(firstPartCount);
 	}
 }
 
