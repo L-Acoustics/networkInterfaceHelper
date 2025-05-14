@@ -19,6 +19,12 @@ jobs:
   fix-files:
     runs-on: windows-2022
     steps:
+    - name: Set git to use LF
+      shell: bash
+      run: |
+        git config --global core.autocrlf false
+        git config --global core.safecrlf true
+
     - uses: actions/checkout@v2
       with:
         submodules: recursive
