@@ -104,6 +104,7 @@
 		}
 #if defined(SWIGCSHARP)
 	// Provide a more native ToString() method
+%csmethodmodifiers ToString "public override"; // Force override of object.ToString()
 	std::string ToString() const noexcept
 	{
 		return static_cast<std::string>(*$self);
