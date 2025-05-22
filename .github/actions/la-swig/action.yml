@@ -1,0 +1,129 @@
+name: 'Build SWIG'
+description: 'Builds SWIG from source for Linux, macOS, and Windows'
+
+outputs:
+  swig_exec:
+    description: "The path to the swig executable"
+    value: ${{ steps.write_output_paths.outputs.swig_exec}}
+  swig_dir:
+    description: "The path to the swig lib dir"
+    value: ${{ steps.write_output_paths.outputs.swig_dir}}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set environment variables
+      shell: bash
+      run: |
+        echo "SWIG_BRANCH=aggregated_release" >> $GITHUB_ENV
+        echo "SWIG_REPOSITORY=https://github.com/christophe-calmejane/swig.git" >> $GITHUB_ENV
+        echo "RUNNER_OS=${{runner.os}}" >> $GITHUB_ENV
+        echo "RUNNER_ARCH=${{runner.arch}}" >> $GITHUB_ENV
+
+    - name: Cache Swig install
+      id: cache-swig
+      uses: actions/cache@v4
+      with:
+        path: ${{ runner.os == 'Windows' && 'tools/swig' || 'swig_install' }}
+        key: swig-${{ env.SWIG_BRANCH }}-${{ runner.os }}-${{ runner.arch }}
+
+    # ----------------- Linux -----------------
+    - name: Install dependencies (Linux)
+      if: runner.os == 'Linux' && steps.cache-swig.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get -qq install libboost-dev libpcre3-dev autoconf automake bison
+
+    # ----------------- macOS -----------------
+    - name: Install dependencies (macOS)
+      if: runner.os == 'macOS' && steps.cache-swig.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        brew install ninja wget bash grep autoconf automake bison readline
+        echo "$(brew --prefix grep)/libexec/gnubin" >> $GITHUB_PATH
+        if [[ $RUNNER_OS == "macOS" && $RUNNER_ARCH == "ARM64" ]]; then
+          echo "/opt/homebrew/opt/bison/bin" >> $GITHUB_PATH
+        else
+          echo "/usr/local/opt/bison/bin" >> $GITHUB_PATH
+        fi
+
+    # ----------------- Windows -----------------
+    - name: Install dependencies (Windows)
+      if: runner.os == 'Windows' && steps.cache-swig.outputs.cache-hit != 'true'
+      shell: powershell
+      run: |
+        nuget install PCRE2 -OutputDirectory $env:GITHUB_WORKSPACE\tools
+        nuget install Bison -OutputDirectory $env:GITHUB_WORKSPACE\tools
+
+    - name: Prepare Windows environment
+      if: runner.os == 'Windows' && steps.cache-swig.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        github_workspace=$(pwd)
+        echo "PCRE2_PATH=$(cygpath -w "$(ls -d $github_workspace/tools/PCRE2*)")" >> $GITHUB_ENV
+        BISON_PATH=$(cygpath -w "$(ls -d $github_workspace/tools/Bison*)/bin")
+        echo "$BISON_PATH" >> $GITHUB_PATH
+
+    # ----------------- Clone Repo -----------------
+    - name: Pull swig repository
+      if: steps.cache-swig.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        git clone -b $SWIG_BRANCH $SWIG_REPOSITORY --single-branch
+
+    # ----------------- Build (Linux/macOS) -----------------
+    - name: Configure and Build (Linux/macOS)
+      if: (runner.os == 'Linux' || runner.os == 'macOS') && steps.cache-swig.outputs.cache-hit != 'true'
+      shell: bash
+      working-directory: ./swig
+      run: |
+        chmod +x autogen.sh
+        ./autogen.sh
+        mkdir -p ../swig_install
+        ./configure --prefix="${{ github.workspace }}/swig_install"
+        make
+        make install
+
+    # ----------------- Build (Windows) -----------------
+    - name: Configure (Windows)
+      if: runner.os == 'Windows' && steps.cache-swig.outputs.cache-hit != 'true'
+      shell: powershell
+      working-directory: ./swig
+      run: |
+        cmake -G "Visual Studio 17 2022" -A x64 `
+          -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}\tools\swig" `
+          -DCMAKE_C_FLAGS="/W3 /EHsc /DPCRE2_STATIC" `
+          -DCMAKE_CXX_FLAGS="/W3 /EHsc /DPCRE2_STATIC" `
+          -DPCRE2_INCLUDE_DIR="$env:PCRE2_PATH\include" `
+          -DPCRE2_LIBRARY="$env:PCRE2_PATH\lib\pcre2-8-static.lib" `
+          -DLINK_FLAGS="/NODEFAULTLIB:MSVCRT" -S . -B build
+
+    - name: Build and Install (Windows)
+      if: runner.os == 'Windows' && steps.cache-swig.outputs.cache-hit != 'true'
+      shell: powershell
+      working-directory: ./swig
+      run: |
+        cmake --build build --config Release
+        cmake --install build --config Release
+        & "${{ github.workspace }}\tools\swig\bin\swig.exe" -version
+
+    # ----------------- Outputs -----------------
+    - name: Set output directories
+      id: write_output_paths
+      shell: bash
+      run: |
+        if [[ $RUNNER_OS == 'Windows' ]]; then
+          echo "swig_exec=${{ github.workspace }}\tools\swig\bin\swig.exe" >> $GITHUB_OUTPUT
+          echo "swig_dir=${{ github.workspace }}\tools\swig\bin\Lib" >> $GITHUB_OUTPUT
+          echo "Using $(./tools/swig/bin/swig.exe -version)"
+          echo "Using swiglib: $(./tools/swig/bin/swig.exe -swiglib)"
+
+          exit 0
+        fi
+        echo "swig_exec=${{ github.workspace }}/swig_install/bin/swig" >> $GITHUB_OUTPUT
+        echo "swig_dir=${{ github.workspace }}/swig_install/share/swig/4.4.0" >> $GITHUB_OUTPUT
+        echo "Using $(./swig_install/bin/swig -version)"
+        echo "Using swiglib: $(./swig_install/bin/swig -swiglib)"
+
+

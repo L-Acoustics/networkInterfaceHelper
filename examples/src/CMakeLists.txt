@@ -20,6 +20,17 @@ target_link_libraries(NetworkInterfacesMonitor PRIVATE la_networkInterfaceHelper
 # Deploy and install target and its runtime dependencies (call this AFTER ALL dependencies have been added to the target)
 cu_setup_deploy_runtime(NetworkInterfacesMonitor ${INSTALL_EXAMPLE_FLAG} ${SIGN_FLAG})
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+	add_executable(macOSnetworkEventMonitor macOS_networkEventMonitor.mm)
+	set_target_properties(macOSnetworkEventMonitor PROPERTIES FOLDER "Examples")
+	# Setup common options
+	cu_setup_executable_options(macOSnetworkEventMonitor)
+	# Link with IOKit
+	target_link_libraries(macOSnetworkEventMonitor PRIVATE "-framework Foundation -framework IOKit")
+	# Deploy and install target and its runtime dependencies (call this AFTER ALL dependencies have been added to the target)
+	cu_setup_deploy_runtime(macOSnetworkEventMonitor ${INSTALL_EXAMPLE_FLAG} ${SIGN_FLAG})
+endif()
+
 if(BUILD_C_BINDINGS)
 	# Network interfaces enumerator using C bindings
 	add_executable(NetworkInterfacesEnumeratorC networkInterfacesEnumerator.c)

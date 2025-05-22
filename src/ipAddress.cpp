@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2023, L-Acoustics
+* Copyright (C) 2016-2025, L-Acoustics
 
 * This file is part of LA_networkInterfaceHelper.
 
@@ -47,6 +47,16 @@
 #include <cassert>
 #include <limits> // numeric_limits
 #include <optional>
+
+#if !defined(__GNUC__) || __GNUC__ >= 10 /* <version> is not present in earier versions of gcc (not sure which version exactly, using 10 here) */
+#	include <version>
+#endif
+
+#if __cpp_lib_bitops >= 201907L
+#	include <bit>
+#else // __cpp_lib_bitops <201907L
+#	include <bitset>
+#endif // __cpp_lib_bitops >= 201907L
 
 namespace la
 {
@@ -234,6 +244,13 @@ IPAddress::IPAddress(std::string const& ipString)
 		{
 			// Remove the first empty token
 			tokensV6.erase(tokensV6.begin());
+		}
+
+		// Special case to handle where the last token was empty, immediatelly preceeded by another empty token (ie. "xxx::").
+		if (tokensV6[tokensV6.size() - 1].empty() && tokensV6[tokensV6.size() - 2].empty())
+		{
+			// Remove the last empty token
+			tokensV6.erase(tokensV6.end() - 1);
 		}
 
 		// Compute the number of empty token sequences we have (get the index and length of the sequence) and check if we have an IPV4 embedded
@@ -562,7 +579,32 @@ IPAddress operator+(IPAddress const& lhs, std::uint32_t const value)
 		case IPAddress::Type::V4:
 			return IPAddress{ lhs.getIPV4Packed() + value };
 		case IPAddress::Type::V6:
-			throw std::invalid_argument("IPV6 not supported yet");
+		{
+			auto v = lhs.getIPV6Packed();
+			// Check if adding value to the lower part of the IPV6 will overflow (ie. if we need to carry)
+			if ((std::numeric_limits<decltype(v.second)>::max() - v.second) < value)
+			{
+				auto lowerPart = std::numeric_limits<decltype(v.second)>::min();
+				auto const carry = value - (std::numeric_limits<decltype(v.second)>::max() - v.second);
+				// Check if adding carry to the upper part of the IPV6 will overflow (ie. if we need to carry back to the lower part)
+				if ((std::numeric_limits<decltype(v.first)>::max() - v.first) < carry)
+				{
+					auto const carryBack = carry - (std::numeric_limits<decltype(v.first)>::max() - v.first) - 1 /* Already incremented the lower part */;
+					v.first = std::numeric_limits<decltype(v.first)>::min();
+					lowerPart = carryBack;
+				}
+				else
+				{
+					v.first = static_cast<decltype(v.first)>(v.first + carry);
+				}
+				v.second = static_cast<decltype(v.second)>(lowerPart);
+			}
+			else
+			{
+				v.second = static_cast<decltype(v.second)>(v.second + value);
+			}
+			return IPAddress{ v };
+		}
 		default:
 			throw std::invalid_argument("Invalid Type");
 	}
@@ -575,7 +617,32 @@ IPAddress operator-(IPAddress const& lhs, std::uint32_t const value)
 		case IPAddress::Type::V4:
 			return IPAddress{ lhs.getIPV4Packed() - value };
 		case IPAddress::Type::V6:
-			throw std::invalid_argument("IPV6 not supported yet");
+		{
+			auto v = lhs.getIPV6Packed();
+			// Check if subtracting value from the lower part of the IPV6 will underflow (ie. if we need to borrow)
+			if (v.second < value)
+			{
+				auto lowerPart = std::numeric_limits<decltype(v.second)>::max();
+				auto const borrow = value - v.second;
+				// Check if subtracting borrow from the upper part of the IPV6 will underflow (ie. if we need to borrow back to the lower part)
+				if (v.first < borrow)
+				{
+					auto const borrowBack = borrow - v.first - 1 /* Already decremented the lower part */;
+					v.first = std::numeric_limits<decltype(v.first)>::max();
+					lowerPart = static_cast<decltype(v.second)>(lowerPart - borrowBack);
+				}
+				else
+				{
+					v.first = static_cast<decltype(v.first)>(v.first - borrow);
+				}
+				v.second = static_cast<decltype(v.second)>(lowerPart);
+			}
+			else
+			{
+				v.second = static_cast<decltype(v.second)>(v.second - value);
+			}
+			return IPAddress{ v };
+		}
 		default:
 			throw std::invalid_argument("Invalid Type");
 	}
@@ -586,10 +653,11 @@ IPAddress& operator++(IPAddress& lhs)
 	switch (lhs._type)
 	{
 		case IPAddress::Type::V4:
-			lhs.setValue(lhs.getIPV4Packed() + 1);
+			lhs = operator+(lhs, 1);
 			break;
 		case IPAddress::Type::V6:
-			throw std::invalid_argument("IPV6 not supported yet");
+			lhs = operator+(lhs, 1);
+			break;
 		default:
 			throw std::invalid_argument("Invalid Type");
 	}
@@ -602,10 +670,11 @@ IPAddress& operator--(IPAddress& lhs)
 	switch (lhs._type)
 	{
 		case IPAddress::Type::V4:
-			lhs.setValue(lhs.getIPV4Packed() - 1);
+			lhs = operator-(lhs, 1);
 			break;
 		case IPAddress::Type::V6:
-			throw std::invalid_argument("IPV6 not supported yet");
+			lhs = operator-(lhs, 1);
+			break;
 		default:
 			throw std::invalid_argument("Invalid Type");
 	}
@@ -620,7 +689,13 @@ IPAddress operator&(IPAddress const& lhs, IPAddress const& rhs)
 		case IPAddress::Type::V4:
 			return IPAddress{ lhs.getIPV4Packed() & rhs.getIPV4Packed() };
 		case IPAddress::Type::V6:
-			throw std::invalid_argument("IPV6 not supported yet");
+		{
+			auto l = lhs.getIPV6Packed();
+			auto const r = rhs.getIPV6Packed();
+			l.first &= r.first;
+			l.second &= r.second;
+			return IPAddress{ l };
+		}
 		default:
 			throw std::invalid_argument("Invalid Type");
 	}
@@ -633,7 +708,13 @@ IPAddress operator|(IPAddress const& lhs, IPAddress const& rhs)
 		case IPAddress::Type::V4:
 			return IPAddress{ lhs.getIPV4Packed() | rhs.getIPV4Packed() };
 		case IPAddress::Type::V6:
-			throw std::invalid_argument("IPV6 not supported yet");
+		{
+			auto l = lhs.getIPV6Packed();
+			auto const r = rhs.getIPV6Packed();
+			l.first |= r.first;
+			l.second |= r.second;
+			return IPAddress{ l };
+		}
 		default:
 			throw std::invalid_argument("Invalid Type");
 	}
@@ -687,6 +768,64 @@ IPAddress::value_type_v6 IPAddress::unpack(value_type_packed_v6 const ipv6) noex
 	ip[7] = ipv6.second & 0xFFFF;
 
 	return ip;
+}
+
+IPAddress::value_type_packed_v6 IPAddress::packedV6FromPrefixLength(std::uint8_t const length) noexcept
+{
+	if (length == 64)
+	{
+		return IPAddress::value_type_packed_v6{ std::integral_constant<std::uint64_t, 0xffffffffffffffff>::value, std::integral_constant<std::uint64_t, 0>::value };
+	}
+	else if (length == 128)
+	{
+		return IPAddress::value_type_packed_v6{ std::integral_constant<std::uint64_t, 0xffffffffffffffff>::value, std::integral_constant<std::uint64_t, 0xffffffffffffffff>::value };
+	}
+	else if (length < 64)
+	{
+		return IPAddress::value_type_packed_v6{ ~(~std::uint64_t(0) >> length), std::integral_constant<std::uint64_t, 0>::value };
+	}
+	else
+	{
+		return IPAddress::value_type_packed_v6{ std::integral_constant<std::uint64_t, 0xffffffffffffffff>::value, ~(~std::uint64_t(0) >> (length - 64)) };
+	}
+}
+
+std::uint8_t IPAddress::prefixLengthFromPackedV6(IPAddress::value_type_packed_v6 const packed) noexcept
+{
+#if __cpp_lib_bitops >= 201907L
+	// C++20
+	auto const firstPartCount = static_cast<std::uint8_t>(std::countl_one(static_cast<std::uint64_t>(packed.first)));
+	auto const secondPartCount = static_cast<std::uint8_t>(std::countl_one(static_cast<std::uint64_t>(packed.second)));
+#else // __cpp_lib_bitops <201907L
+	// C++17
+	auto const countOnes = [](std::bitset<64> const bits)
+	{
+		auto count = 0u;
+		for (auto i = 63; i >= 0; --i)
+		{
+			if (bits.test(i))
+			{
+				count++;
+			}
+			else
+			{
+				break;
+			}
+		}
+		return count;
+	};
+	auto const firstPartCount = countOnes(std::bitset<64>(packed.first));
+	auto const secondPartCount = countOnes(std::bitset<64>(packed.second));
+#endif // __cpp_lib_bitops >= 201907L
+
+	if (firstPartCount == 64)
+	{
+		return static_cast<std::uint8_t>(64u + secondPartCount);
+	}
+	else
+	{
+		return static_cast<std::uint8_t>(firstPartCount);
+	}
 }
 
 std::size_t IPAddress::hash::operator()(IPAddress const& ip) const

@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2023, L-Acoustics
+* Copyright (C) 2016-2025, L-Acoustics
 
 * This file is part of LA_networkInterfaceHelper.
 
@@ -303,6 +303,35 @@ private:
 
 		// Update the interfaces list
 		_networkInterfaces = std::move(interfaces);
+	}
+
+	/** When an interface was added */
+	virtual void onInterfaceAdded(std::string const& interfaceName, Interface&& intfc) noexcept override
+	{
+		// Lock
+		auto const lg = std::lock_guard(_lock);
+
+		// Add the interface to the list
+		auto const [it, inserted] = _networkInterfaces.emplace(interfaceName, std::move(intfc));
+		if (inserted)
+		{
+			notifyObserversMethod(&Observer::onInterfaceAdded, it->second);
+		}
+	}
+
+	/** When an interface was removed */
+	virtual void onInterfaceRemoved(std::string const& interfaceName) noexcept override
+	{
+		// Lock
+		auto const lg = std::lock_guard(_lock);
+
+		// Search the interface matching the name
+		if (auto intfcIt = _networkInterfaces.find(interfaceName); intfcIt != _networkInterfaces.end())
+		{
+			auto const& intfc = intfcIt->second;
+			notifyObserversMethod(&Observer::onInterfaceRemoved, intfc);
+			_networkInterfaces.erase(intfcIt);
+		}
 	}
 
 	/** When the Enabled state of an interface changed */

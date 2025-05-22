@@ -1,6 +1,8 @@
+[![Linux build & test](https://github.com/L-Acoustics/networkInterfaceHelper/actions/workflows/linux.yml/badge.svg)](https://github.com/L-Acoustics/networkInterfaceHelper/actions/workflows/linux.yml)
+[![Windows](https://github.com/L-Acoustics/networkInterfaceHelper/actions/workflows/windows.yml/badge.svg)](https://github.com/L-Acoustics/networkInterfaceHelper/actions/workflows/windows.yml)
+[![Macos](https://github.com/L-Acoustics/networkInterfaceHelper/actions/workflows/macos.yml/badge.svg)](https://github.com/L-Acoustics/networkInterfaceHelper/actions/workflows/macos.yml)
 # LA Network Interface Helper Library
-
-Copyright (C) 2016-2023, L-Acoustics
+Copyright (C) 2016-2025, L-Acoustics
 
 ## What is LA_networkInterfaceHelper
 LA_networkInterfaceHelper is a lightweight open source library for enumerating Network Interfaces and monitoring any state change.
@@ -21,12 +23,12 @@ This software is licensed under the BSD 3-clause License (see [LICENSE](LICENSE)
 
 ### Windows
 - Windows 10
-- Visual Studio 2019 v16.3 or greater (using platform toolset v142)
-- GitBash or cygwin
+- Visual Studio 2022 v17.6 or greater
+- GitBash, cygwin or WSL
 
 ### macOS
-- macOS 10.12
-- Xcode 12
+- macOS 10.13
+- Xcode 15
 
 ### Linux
 - C++17 compliant compiler (minimum recommended g++ 11.2.0)

@@ -4,6 +4,17 @@ All notable changes to the LA Network Interface Helper Library will be documente
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.2.6] - 2025-05-22
+### Added
+- Missing IPv6 operators to `IPAddress` (comparison, addition, substraction).
+- Support for IPv6 in `IPAddressInfo`.
+- Added detection of IPv6 addresses.
+
+### Fixed
+- On macOS, correctly retrieve the user defined name of the interface.
+- On macOS, correctly detect plugged/unplugged adapters (partially broken since macOS 11).
+- IPv6 from string conversion not working if shortened at the end (e.g. 'acbd::').
+
 ## [1.2.5] - 2025-01-27
 ### Fixed
 - Missing SWIG type for IPAddressPackedV6.

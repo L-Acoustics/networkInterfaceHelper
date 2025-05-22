@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2023, L-Acoustics
+* Copyright (C) 2016-2025, L-Acoustics
 
 * This file is part of LA_networkInterfaceHelper.
 
@@ -291,6 +291,26 @@ TEST(IPAddress, StringConstructV6)
 		EXPECT_EQ((la::networkInterface::IPAddress::value_type_packed_v6{ 0x20010db800000000, 0x00080800200c417a }), ip.getIPV6Packed());
 	}
 
+	// Valid IPV6 string
+	{
+		auto ip = la::networkInterface::IPAddress{};
+		EXPECT_NO_THROW(ip = la::networkInterface::IPAddress{ "2001:0DB8:0:CD30::" }) << "Constructing from a valid string should not throw";
+
+		EXPECT_TRUE(ip.isValid()) << "V6 string constructed IPAddress should be valid";
+		EXPECT_TRUE(static_cast<bool>(ip)) << "V6 string constructed IPAddress should be valid";
+
+		EXPECT_NO_THROW(ip.getIPV6()) << "Trying to get IPV6 value should not throw";
+		EXPECT_NO_THROW((void)static_cast<la::networkInterface::IPAddress::value_type_v6>(ip)) << "Trying to get IPV6 value should not throw";
+		EXPECT_NO_THROW(ip.getIPV6Packed()) << "Trying to get IPV6Packed value should not throw";
+		EXPECT_NO_THROW((void)static_cast<la::networkInterface::IPAddress::value_type_packed_v6>(ip)) << "Trying to get IPV6Packed value should not throw";
+		EXPECT_THROW(ip.getIPV4(), std::invalid_argument) << "Trying to get IPV4 value should throw";
+		EXPECT_THROW((void)static_cast<la::networkInterface::IPAddress::value_type_v4>(ip), std::invalid_argument) << "Trying to get IPV4 value should throw";
+
+		EXPECT_EQ(la::networkInterface::IPAddress::Type::V6, ip.getType()) << "getType() for V6 IPAddress should be V6";
+
+		EXPECT_EQ((la::networkInterface::IPAddress::value_type_packed_v6{ 0x20010db80000cd30, 0x0000000000000000 }), ip.getIPV6Packed());
+	}
+
 	// Valid IPV4 Compatible string
 	{
 		auto ip = la::networkInterface::IPAddress{};
@@ -457,10 +477,22 @@ TEST(IPAddress, ToStringV6)
 		EXPECT_STREQ("2001:db8::8:800:200c:417a", adrsAsString.c_str());
 	}
 	{
+		auto const adrs = la::networkInterface::IPAddress{ "2001:DB8:0:0:0:0:0:0" };
+
+		auto const adrsAsString = static_cast<std::string>(adrs);
+		EXPECT_STREQ("2001:db8::", adrsAsString.c_str());
+	}
+	{
 		auto const adrs = la::networkInterface::IPAddress{ "FF01:0:0:0:0:0:0:101" };
 
 		auto const adrsAsString = static_cast<std::string>(adrs);
 		EXPECT_STREQ("ff01::101", adrsAsString.c_str());
+	}
+	{
+		auto const adrs = la::networkInterface::IPAddress{ "1:0:0:0:0:0:0:0" };
+
+		auto const adrsAsString = static_cast<std::string>(adrs);
+		EXPECT_STREQ("1::", adrsAsString.c_str());
 	}
 	{
 		auto const adrs = la::networkInterface::IPAddress{ "0:0:0:0:0:0:0:1" };
@@ -474,6 +506,15 @@ TEST(IPAddress, ToStringV6)
 		auto const adrsAsString = static_cast<std::string>(adrs);
 		EXPECT_STREQ("::", adrsAsString.c_str()) << "Unspecified address not properly displayed";
 	}
+}
+
+TEST(IPAddress, rfc5952_4_2_1)
+{
+	// Shorten as much as possible
+	auto const adrs = la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_v6{ 0x2001, 0x0DB8, 0x0000, 0x0000, 0x0000, 0x0000, 0x0002, 0x0001 } };
+
+	auto const adrsAsString = static_cast<std::string>(adrs);
+	EXPECT_STREQ("2001:db8::2:1", adrsAsString.c_str()) << "rfc5952 4.2.1 Not valid";
 }
 
 TEST(IPAddress, rfc5952_4_2_2)
@@ -548,9 +589,32 @@ TEST(IPAddress, ValidateNetmaskV4)
 	EXPECT_NO_THROW(la::networkInterface::validateNetmaskV4(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v4{ 0xFFFFFFFF } }));
 
 	EXPECT_THROW(la::networkInterface::validateNetmaskV4(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v4{ 0x00000000 } }), std::invalid_argument) << "Empty mask should throw";
-	EXPECT_THROW(la::networkInterface::validateNetmaskV4(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v4{ 0x00000000 } }), std::invalid_argument) << "Empty mask should throw";
 	EXPECT_THROW(la::networkInterface::validateNetmaskV4(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v4{ 0x40000000 } }), std::invalid_argument) << "Mask doesn't has MSB set";
+	EXPECT_THROW(la::networkInterface::validateNetmaskV4(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v4{ 0x0000000F } }), std::invalid_argument) << "Mask doesn't has MSB set";
 	EXPECT_THROW(la::networkInterface::validateNetmaskV4(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v4{ 0xF4000000 } }), std::invalid_argument) << "Mask starts then stops (not contiguous)";
+}
+
+TEST(IPAddress, ValidateNetmaskV6)
+{
+	EXPECT_NO_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0x8000000000000000, 0x0000000000000000 } }));
+	EXPECT_NO_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xC000000000000000, 0x0000000000000000 } }));
+	EXPECT_NO_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xF800000000000000, 0x0000000000000000 } }));
+	EXPECT_NO_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFF0, 0x0000000000000000 } }));
+	EXPECT_NO_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0x0000000000000000 } }));
+	EXPECT_NO_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0x8000000000000000 } }));
+	EXPECT_NO_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0xC000000000000000 } }));
+	EXPECT_NO_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0xF800000000000000 } }));
+	EXPECT_NO_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFF0 } }));
+	EXPECT_NO_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFE } }));
+	EXPECT_NO_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF } }));
+
+	EXPECT_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0x4000000000000000, 0x0000000000000000 } }), std::invalid_argument) << "Mask doesn't has MSB set";
+	EXPECT_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0x4000000000000000, 0x000000000000000F } }), std::invalid_argument) << "Mask doesn't has MSB set";
+	EXPECT_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0x0000000000000000, 0x000000000000000F } }), std::invalid_argument) << "Mask doesn't has MSB set";
+	EXPECT_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xF400000000000000, 0x0000000000000000 } }), std::invalid_argument) << "Mask starts then stops (not contiguous)";
+	EXPECT_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xF000000000000000, 0xF000000000000000 } }), std::invalid_argument) << "Mask starts then stops (not contiguous)";
+	EXPECT_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0x4000000000000000 } }), std::invalid_argument) << "Mask starts then stops (not contiguous)";
+	EXPECT_THROW(la::networkInterface::validateNetmaskV6(la::networkInterface::IPAddress{ la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0x000000000000000F } }), std::invalid_argument) << "Mask starts then stops (not contiguous)";
 }
 
 TEST(IPAddress, EqualityOperatorV4)
@@ -564,11 +628,33 @@ TEST(IPAddress, EqualityOperatorV4)
 	EXPECT_TRUE(ip1 == ipSame);
 }
 
+TEST(IPAddress, EqualityOperatorV6)
+{
+	auto const ip1 = la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200c:417a" };
+	auto const ip2 = la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200c:417b" };
+	auto const ipSame = la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200c:417a" };
+
+	EXPECT_FALSE(ip1 == ip2);
+	EXPECT_FALSE(ipSame == ip2);
+	EXPECT_TRUE(ip1 == ipSame);
+}
+
 TEST(IPAddress, DifferenceOperatorV4)
 {
 	auto const ip1 = la::networkInterface::IPAddress{ "192.168.0.1" };
 	auto const ip2 = la::networkInterface::IPAddress{ "192.168.0.2" };
 	auto const ipSame = la::networkInterface::IPAddress{ "192.168.0.1" };
+
+	EXPECT_TRUE(ip1 != ip2);
+	EXPECT_TRUE(ipSame != ip2);
+	EXPECT_FALSE(ip1 != ipSame);
+}
+
+TEST(IPAddress, DifferenceOperatorV6)
+{
+	auto const ip1 = la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200c:417a" };
+	auto const ip2 = la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200c:417b" };
+	auto const ipSame = la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200c:417a" };
 
 	EXPECT_TRUE(ip1 != ip2);
 	EXPECT_TRUE(ipSame != ip2);
@@ -589,11 +675,35 @@ TEST(IPAddress, InferiorOperatorV4)
 	EXPECT_TRUE(ip2 < ip4);
 }
 
+TEST(IPAddress, InferiorOperatorV6)
+{
+	auto const ip1 = la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200c:417a" };
+	auto const ip2 = la::networkInterface::IPAddress{ "2001:db8:0:2:8:800:200c:417b" };
+	auto const ipSame = la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200c:417a" };
+	auto const ip3 = la::networkInterface::IPAddress{ "2001:db8::" };
+	auto const ip4 = la::networkInterface::IPAddress{ "2001:db9:0:1:8:800:200c:417a" };
+
+	EXPECT_TRUE(ip1 < ip2);
+	EXPECT_FALSE(ip1 < ipSame);
+	EXPECT_TRUE(ip3 < ip1);
+	EXPECT_TRUE(ip2 < ip4);
+}
+
 TEST(IPAddress, InferiorEqualityOperatorV4)
 {
 	auto const ip1 = la::networkInterface::IPAddress{ "192.168.0.1" };
 	auto const ip2 = la::networkInterface::IPAddress{ "192.168.0.2" };
 	auto const ipSame = la::networkInterface::IPAddress{ "192.168.0.1" };
+
+	EXPECT_TRUE(ip1 <= ip2);
+	EXPECT_TRUE(ip1 <= ipSame);
+}
+
+TEST(IPAddress, InferiorEqualityOperatorV6)
+{
+	auto const ip1 = la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200c:417a" };
+	auto const ip2 = la::networkInterface::IPAddress{ "2001:db8:0:2:8:800:200c:417b" };
+	auto const ipSame = la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200c:417a" };
 
 	EXPECT_TRUE(ip1 <= ip2);
 	EXPECT_TRUE(ip1 <= ipSame);
@@ -606,11 +716,35 @@ TEST(IPAddress, AdditionOperatorV4)
 	EXPECT_TRUE((la::networkInterface::IPAddress{ "192.168.0.1" } + 0x10000) == la::networkInterface::IPAddress{ "192.169.0.1" });
 }
 
+TEST(IPAddress, AdditionOperatorV6)
+{
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "2001:db8:1:1:8:800:200b:417a" } + 1) == la::networkInterface::IPAddress{ "2001:db8:1:1:8:800:200b:417b" }) << "Simple addition failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "2001:db8:1:1:ffff:ffff:ffff:ffff" } + 1) == la::networkInterface::IPAddress{ "2001:db8:1:2::" }) << "Addition with lower part carry failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "2001:db8:1:1:ffff:ffff:ffff:fffe" } + 1) == la::networkInterface::IPAddress{ "2001:db8:1:1:ffff:ffff:ffff:ffff" }) << "Addition just before lower part carry failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "2001:db8:1:1:ffff:ffff:ffff:fffe" } + 2) == la::networkInterface::IPAddress{ "2001:db8:1:2::" }) << "Addition with lower part carry failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff" } + 1) == la::networkInterface::IPAddress{ "::" }) << "Addition with lower and upper part carry failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe" } + 1) == la::networkInterface::IPAddress{ "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff" }) << "Addition just before lower and upper part carry failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe" } + 2) == la::networkInterface::IPAddress{ "::" }) << "Addition with lower and upper part carry failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe" } + 3) == la::networkInterface::IPAddress{ "::1" }) << "Addition with lower and upper part carry failed";
+}
+
 TEST(IPAddress, SubstrationOperatorV4)
 {
 	EXPECT_TRUE((la::networkInterface::IPAddress{ "192.168.0.2" } - 1) == la::networkInterface::IPAddress{ "192.168.0.1" });
 	EXPECT_TRUE((la::networkInterface::IPAddress{ "192.168.1.0" } - 1) == la::networkInterface::IPAddress{ "192.168.0.255" });
 	EXPECT_TRUE((la::networkInterface::IPAddress{ "192.168.0.1" } - 0x10000) == la::networkInterface::IPAddress{ "192.167.0.1" });
+}
+
+TEST(IPAddress, SubstrationOperatorV6)
+{
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "2001:db8:1:1:8:800:200b:417a" } - 1) == la::networkInterface::IPAddress{ "2001:db8:1:1:8:800:200b:4179" }) << "Simple subtraction failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "2001:db8:1:1:8:800:200b:417a" } - 2) == la::networkInterface::IPAddress{ "2001:db8:1:1:8:800:200b:4178" }) << "Simple subtraction failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "2001:db8:1:1::" } - 1) == la::networkInterface::IPAddress{ "2001:db8:1:0:ffff:ffff:ffff:ffff" }) << "Subtraction with lower part borrow failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "2001:db8:1:1::1" } - 1) == la::networkInterface::IPAddress{ "2001:db8:1:1::" }) << "Subtraction just before lower part borrow failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "2001:db8:1:1::1" } - 2) == la::networkInterface::IPAddress{ "2001:db8:1:0:ffff:ffff:ffff:ffff" }) << "Subtraction with lower part borrow failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "::" } - 1) == la::networkInterface::IPAddress{ "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff" }) << "Subtraction with lower and upper part borrow failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "::" } - 2) == la::networkInterface::IPAddress{ "ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe" }) << "Subtraction with lower and upper part borrow failed";
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "::1" } - 2) == la::networkInterface::IPAddress{ "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff" }) << "Subtraction with lower and upper part borrow failed";
 }
 
 TEST(IPAddress, IncrementOperatorV4)
@@ -622,6 +756,22 @@ TEST(IPAddress, IncrementOperatorV4)
 	EXPECT_TRUE(++ip2 == la::networkInterface::IPAddress{ "192.168.1.0" });
 }
 
+TEST(IPAddress, IncrementOperatorV6)
+{
+	auto ip1 = la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200C:417A" };
+	EXPECT_TRUE(++ip1 == la::networkInterface::IPAddress{ "2001:db8::8:800:200c:417b" }) << "Simple increment failed";
+	EXPECT_TRUE(++ip1 == la::networkInterface::IPAddress{ "2001:db8::8:800:200c:417c" }) << "Simple increment failed";
+
+	auto ip2 = la::networkInterface::IPAddress{ "2001:db8:1:1:ffff:ffff:ffff:ffff" };
+	EXPECT_TRUE(++ip2 == la::networkInterface::IPAddress{ "2001:db8:1:2::" }) << "Increment with lower part carry failed";
+	EXPECT_TRUE(++ip2 == la::networkInterface::IPAddress{ "2001:db8:1:2::1" }) << "Increment with lower part carry failed";
+
+	auto ip3 = la::networkInterface::IPAddress{ "2001:db8:1:1:ffff:ffff:ffff:fffe" };
+	EXPECT_TRUE(++ip3 == la::networkInterface::IPAddress{ "2001:db8:1:1:ffff:ffff:ffff:ffff" }) << "Increment just before lower part carry failed";
+	EXPECT_TRUE(++ip3 == la::networkInterface::IPAddress{ "2001:db8:1:2::" }) << "Increment with lower part carry failed";
+	EXPECT_TRUE(++ip3 == la::networkInterface::IPAddress{ "2001:db8:1:2::1" }) << "Increment with lower part carry failed";
+}
+
 TEST(IPAddress, DecrementOperatorV4)
 {
 	auto ip1 = la::networkInterface::IPAddress{ "192.168.0.2" };
@@ -631,16 +781,43 @@ TEST(IPAddress, DecrementOperatorV4)
 	EXPECT_TRUE(--ip2 == la::networkInterface::IPAddress{ "192.168.0.255" });
 }
 
+TEST(IPAddress, DecrementOperatorV6)
+{
+	auto ip1 = la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200C:417B" };
+	EXPECT_TRUE(--ip1 == la::networkInterface::IPAddress{ "2001:db8::8:800:200c:417a" }) << "Simple decrement failed";
+	EXPECT_TRUE(--ip1 == la::networkInterface::IPAddress{ "2001:db8::8:800:200c:4179" }) << "Simple decrement failed";
+
+	auto ip2 = la::networkInterface::IPAddress{ "2001:db8:1:2::" };
+	EXPECT_TRUE(--ip2 == la::networkInterface::IPAddress{ "2001:db8:1:1:ffff:ffff:ffff:ffff" }) << "Decrement with lower part borrow failed";
+	EXPECT_TRUE(--ip2 == la::networkInterface::IPAddress{ "2001:db8:1:1:ffff:ffff:ffff:fffe" }) << "Decrement with lower part borrow failed";
+
+	auto ip3 = la::networkInterface::IPAddress{ "2001:db8:1:2::1" };
+	EXPECT_TRUE(--ip3 == la::networkInterface::IPAddress{ "2001:db8:1:2::" }) << "Decrement just before lower part borrow failed";
+	EXPECT_TRUE(--ip3 == la::networkInterface::IPAddress{ "2001:db8:1:1:ffff:ffff:ffff:ffff" }) << "Decrement with lower part borrow failed";
+	EXPECT_TRUE(--ip3 == la::networkInterface::IPAddress{ "2001:db8:1:1:ffff:ffff:ffff:fffe" }) << "Decrement with lower part borrow failed";
+}
+
 TEST(IPAddress, AndOperatorV4)
 {
 	EXPECT_TRUE((la::networkInterface::IPAddress{ "192.168.1.1" } & la::networkInterface::IPAddress{ "255.255.0.0" }) == la::networkInterface::IPAddress{ "192.168.0.0" });
 	EXPECT_TRUE((la::networkInterface::IPAddress{ "192.168.20.100" } & la::networkInterface::IPAddress{ "255.255.240.0" }) == la::networkInterface::IPAddress{ "192.168.16.0" });
 }
 
+TEST(IPAddress, AndOperatorV6)
+{
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200C:417A" } & la::networkInterface::IPAddress{ "FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF" }) == la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200c:417a" });
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "2001:db8::8:800:200C:417A" } & la::networkInterface::IPAddress{ "FFFF:FFFF:FFFF:FFFF::" }) == la::networkInterface::IPAddress{ "2001:db8::" });
+}
+
 TEST(IPAddress, OrOperatorV4)
 {
 	EXPECT_TRUE((la::networkInterface::IPAddress{ "192.168.1.0" } | la::networkInterface::IPAddress{ "0.0.1.1" }) == la::networkInterface::IPAddress{ "192.168.1.1" });
 	EXPECT_TRUE((la::networkInterface::IPAddress{ "192.168.1.0" } | la::networkInterface::IPAddress{ "0.0.2.0" }) == la::networkInterface::IPAddress{ "192.168.3.0" });
+}
+
+TEST(IPAddress, OrOperatorV6)
+{
+	EXPECT_TRUE((la::networkInterface::IPAddress{ "2001:db8:0:0:8:800:200C:417A" } | la::networkInterface::IPAddress{ "FFFF:0:1234:5678::" }) == la::networkInterface::IPAddress{ "ffff:db8:1234:5678:8:800:200c:417a" });
 }
 
 TEST(IPAddress, PackV4)
@@ -653,10 +830,32 @@ TEST(IPAddress, UnpackV4)
 	EXPECT_EQ((la::networkInterface::IPAddress::value_type_v4{ 192u, 168u, 0u, 1u }), la::networkInterface::IPAddress::unpack(la::networkInterface::IPAddress::value_type_packed_v4{ 0xC0A80001 }));
 }
 
+TEST(IPAddress, packedV6FromPrefixLength)
+{
+	EXPECT_EQ((la::networkInterface::IPAddress::value_type_packed_v6{ 0x0000000000000000, 0x0000000000000000 }), la::networkInterface::IPAddress::packedV6FromPrefixLength(0));
+	EXPECT_EQ((la::networkInterface::IPAddress::value_type_packed_v6{ 0x8000000000000000, 0x0000000000000000 }), la::networkInterface::IPAddress::packedV6FromPrefixLength(1));
+	EXPECT_EQ((la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFE, 0x0000000000000000 }), la::networkInterface::IPAddress::packedV6FromPrefixLength(63));
+	EXPECT_EQ((la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0x0000000000000000 }), la::networkInterface::IPAddress::packedV6FromPrefixLength(64));
+	EXPECT_EQ((la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0x8000000000000000 }), la::networkInterface::IPAddress::packedV6FromPrefixLength(65));
+	EXPECT_EQ((la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFE }), la::networkInterface::IPAddress::packedV6FromPrefixLength(127));
+	EXPECT_EQ((la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF }), la::networkInterface::IPAddress::packedV6FromPrefixLength(128));
+}
+
+TEST(IPAddress, prefixLengthFromPackedV6)
+{
+	EXPECT_EQ(0, la::networkInterface::IPAddress::prefixLengthFromPackedV6(la::networkInterface::IPAddress::value_type_packed_v6{ 0x0000000000000000, 0x0000000000000000 }));
+	EXPECT_EQ(1, la::networkInterface::IPAddress::prefixLengthFromPackedV6(la::networkInterface::IPAddress::value_type_packed_v6{ 0x8000000000000000, 0x0000000000000000 }));
+	EXPECT_EQ(63, la::networkInterface::IPAddress::prefixLengthFromPackedV6(la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFE, 0x0000000000000000 }));
+	EXPECT_EQ(64, la::networkInterface::IPAddress::prefixLengthFromPackedV6(la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0x0000000000000000 }));
+	EXPECT_EQ(65, la::networkInterface::IPAddress::prefixLengthFromPackedV6(la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0x8000000000000000 }));
+	EXPECT_EQ(127, la::networkInterface::IPAddress::prefixLengthFromPackedV6(la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFE }));
+	EXPECT_EQ(128, la::networkInterface::IPAddress::prefixLengthFromPackedV6(la::networkInterface::IPAddress::value_type_packed_v6{ 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF }));
+}
+
 /* ************************************************************ */
 /* IPAddressInfo Tests                                          */
 /* ************************************************************ */
-TEST(IPAddressInfo, NetworkBaseAddress)
+TEST(IPAddressInfo, NetworkBaseAddressV4)
 {
 	// Valid IPAddressInfo
 	{
@@ -692,6 +891,25 @@ TEST(IPAddressInfo, NetworkBaseAddress)
 
 	// TODO: Complete with invalid values
 }
+
+TEST(IPAddressInfo, NetworkBaseAddressV6)
+{
+	// Valid IPAddressInfo
+	{
+		auto const info = la::networkInterface::IPAddressInfo{ la::networkInterface::IPAddress{ "2001:db8:0:1:8:800:200C:417A" }, la::networkInterface::IPAddress{ la::networkInterface::IPAddress::packedV6FromPrefixLength(64) } };
+
+		ASSERT_NO_THROW(info.getNetworkBaseAddress());
+		EXPECT_STREQ("2001:db8:0:1::", static_cast<std::string>(info.getNetworkBaseAddress()).c_str());
+	}
+	// Valid IPAddressInfo
+	{
+		auto const info = la::networkInterface::IPAddressInfo{ la::networkInterface::IPAddress{ "fe80::1c74:66e8:4a84:f972" }, la::networkInterface::IPAddress{ la::networkInterface::IPAddress::packedV6FromPrefixLength(120) } };
+
+		ASSERT_NO_THROW(info.getNetworkBaseAddress());
+		EXPECT_STREQ("fe80::1c74:66e8:4a84:f900", static_cast<std::string>(info.getNetworkBaseAddress()).c_str());
+	}
+}
+
 
 TEST(IPAddressInfo, BroadcastAddress)
 {

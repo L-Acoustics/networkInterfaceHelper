@@ -29,7 +29,15 @@ class Observer : la.networkInterface.NetworkInterfaceHelper.DefaultedObserver
 			Console.WriteLine("  IP Addresses:");
 			foreach (var info in intfc.ipAddressInfos)
 			{
-				Console.WriteLine("    " + info.address.ToString() + " (" + info.netmask.ToString() + ") -> " + info.getNetworkBaseAddress().ToString() + " / " + info.getBroadcastAddress().ToString());
+				if (info.address.getType() == la.networkInterface.IPAddress.Type.V4)
+				{
+					Console.WriteLine("    " + info.address.ToString() + " (" + info.netmask.ToString() + ") -> " + info.getNetworkBaseAddress().ToString() + " / " + info.getBroadcastAddress().ToString());
+				}
+				else
+				{
+					// IPv6
+					Console.WriteLine("    " + info.address.ToString() + "/" + la.networkInterface.IPAddress.prefixLengthFromPackedV6(info.netmask.getIPV6Packed()) + " -> " + info.getNetworkBaseAddress().ToString());
+				}
 			}
 		}
 		if (!intfc.gateways.IsEmpty)

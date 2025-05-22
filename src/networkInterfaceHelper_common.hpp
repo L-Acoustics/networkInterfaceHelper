@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2023, L-Acoustics
+* Copyright (C) 2016-2025, L-Acoustics
 
 * This file is part of LA_networkInterfaceHelper.
 
@@ -85,6 +85,10 @@ public:
 
 	/** When the list of interfaces changed */
 	virtual void onNewInterfacesList(Interfaces&& interfaces) noexcept = 0;
+	/** When an interface was added */
+	virtual void onInterfaceAdded(std::string const& interfaceName, Interface&& intfc) noexcept = 0;
+	/** When an interface was removed */
+	virtual void onInterfaceRemoved(std::string const& interfaceName) noexcept = 0;
 	/** When the Enabled state of an interface changed */
 	virtual void onEnabledStateChanged(std::string const& interfaceName, bool const isEnabled) noexcept = 0;
 	/** When the Connected state of an interface changed */
@@ -161,6 +165,18 @@ static inline void validateNetmaskV4(IPAddress const& netmask)
 	if (!maskStarted)
 	{
 		throw std::invalid_argument("netmask cannot be empty");
+	}
+}
+
+static inline void validateNetmaskV6(IPAddress const& netmask)
+{
+	// Validate netmask by converting it to prefix length then back to packed and compare (they should be the same)
+	auto const packedMask = netmask.getIPV6Packed();
+	auto const prefixLength = IPAddress::prefixLengthFromPackedV6(packedMask);
+	auto const packedMaskFromPrefix = IPAddress::packedV6FromPrefixLength(prefixLength);
+	if (packedMask != packedMaskFromPrefix)
+	{
+		throw std::invalid_argument("netmask is not contiguous");
 	}
 }
 
