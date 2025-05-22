@@ -1,0 +1,82 @@
+name: 'Configure LA Runner'
+description: 'Configure the runner to build LA lib/app'
+inputs:
+  os:
+    description: 'The operating system to configure the runner'
+    required: true
+  
+runs:
+  using: "composite"
+  steps:
+    - name: Check support
+      shell: bash
+      run: |
+        supported_os=("linux" "windows" "macos")
+        input_os=${{inputs.os}}
+        if [[ ! " ${supported_os[@]} " =~ " $input_os " ]]; then
+          echo "Error: Un-supported OS ${{inputs.os}}. Supported os values: ${supported_os[*]}."
+          exit 1
+        fi
+        echo "Running on platform [$input_os]"
+
+    - name: (LINUX) Install dependencies
+      if: inputs.os == 'linux'
+      shell: bash
+      run: |
+        echo "****************** [LINUX-CONFIGURE] APT DEPS"
+        sudo apt-get update
+        sudo apt-get install -y wget ninja-build build-essential
+
+    - name: (LINUX) Install CMake 
+      if: inputs.os == 'linux' 
+      shell: bash
+      run: |
+        echo "****************** [LINUX-CONFIGURE] INSTALL CMAKE"
+        set +xe
+        which cmake &> /dev/null 
+        if [ $? -ne 0 ]; then
+          arch=$([ $(uname -m) = "arm64" ] && echo "aarch64" || echo "x86_64")
+          cmake_script="cmake-3.31.5-linux-$arch.sh"
+          wget "https://github.com/Kitware/CMake/releases/download/v3.31.5/$cmake_script"
+          chmod +x $cmake_script
+          sudo ./$cmake_script --skip-license --prefix=/usr/local
+        fi
+        CMAKE_VERSION=$(cmake --version | awk '/version/ {print $3}')
+        echo "****************** [LINUX-CONFIGURE] USING CMAKE: ${CMAKE_VERSION}"
+
+    - name: (WINDOWS) Install job dependencies
+      if: inputs.os == 'windows'
+      shell: bash
+      run: |
+        echo "****************** [WINDOWS-CONFIGURE] CHOCO DEPS"
+        choco install -y grep
+
+        CMAKE_VERSION=$(cmake --version | awk '/version/ {print $3}')
+        echo "****************** [WINDOWS-CONFIGURE] USING CMAKE: ${CMAKE_VERSION}"
+
+    - name: (WINDOWS) Configure compiler and generator
+      if: inputs.os == 'windows'
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
+    - name: (MACOS) Install job dependencies
+      if: inputs.os == 'macos'
+      shell: bash
+      run : |
+        echo "****************** [MACOS-CONFIGURE] BREW DEPS"
+        brew install ninja
+        brew install wget
+        brew install bash
+        brew install grep
+        echo "$(brew --prefix grep)/libexec/gnubin" >> $GITHUB_PATH
+
+    - name: (MACOS) Install CMake
+      if: inputs.os == 'macos'
+      shell: bash
+      run : |
+        echo "****************** [MACOS-CONFIGURE] INSTALL CMAKE"
+        set -xe # exit on first error
+        which cmake &> /dev/null 
+        CMAKE_VERSION=$(cmake --version | awk '/version/ {print $3}')
+        echo "****************** [MACOS-CONFIGURE] USING CMAKE: ${CMAKE_VERSION}"
