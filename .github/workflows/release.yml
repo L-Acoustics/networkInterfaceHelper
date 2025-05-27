@@ -42,12 +42,12 @@ jobs:
       with:
         submodules: recursive
 
-    - uses: ./.github/actions/la-swig
+    - uses: L-Acoustics/la-gh-action/la-swig@046bd2dfb353be5009b05819ec29e66b919dc008
       name: Install custom SWIG
       id: la_swig
 
     - name: Configure runner
-      uses: ./.github/actions/la-configure
+      uses: L-Acoustics/la-gh-action/la-configure-runner@046bd2dfb353be5009b05819ec29e66b919dc008
       with:
         os: linux
 
