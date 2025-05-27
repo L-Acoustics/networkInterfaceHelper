@@ -26,14 +26,12 @@ jobs:
       with:
         submodules: recursive
 
-    - uses: ./.github/actions/la-swig
+    - uses: L-Acoustics/la-mw-gh-action/.github/actions/la-swig@v0
       name: Install custom SWIG
       id: la_swig
 
     - name: Configure runner
-      uses: ./.github/actions/la-configure
-      with:
-        os: macos
+      uses: L-Acoustics/la-mw-gh-action/.github/actions/la-configure-runner@v0
 
     - name: Configure CMake
       shell: bash
