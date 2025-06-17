@@ -12,7 +12,7 @@ on:
         type: boolean
         default: true
         required: true
-  
+
 permissions:
   contents: write
   pull-requests: write
@@ -23,7 +23,7 @@ permissions:
 
 env:
   NUGET_FEED_USENAME: github
-  NUGET_FEED_URL: https://nuget.pkg.github.com/${{github.repository_owner}}/index.json 
+  NUGET_FEED_URL: https://nuget.pkg.github.com/${{github.repository_owner}}/index.json
   lib_name: la_networkInterfaceHelper
   build_dir: _build
   GITHUB_TOKEN: ${{secrets.NUGET_PAT}}
@@ -52,14 +52,14 @@ jobs:
     - name: Configure CMake
       shell: bash
       run: |
-        echo "Generating CMake for Configuration : ${{matrix.config}}" 
+        echo "Generating CMake for Configuration : ${{matrix.config}}"
 
         arch=$([ ${{runner.arch}} = "X64" ] && echo "x64" || echo "arm64")
         ./gen_cmake.sh -o ${{env.build_dir}} -${{matrix.config}} -c Ninja -build-csharp -arch $arch -- \
           "-DNUGET_PUBLISH_SOURCE_URL=${{env.NUGET_FEED_URL}}" \
           "-DSWIG_DIR=${{steps.la_swig.outputs.swig_dir}}" \
           "-DCU_REPO_URL=https://github.com/${{github.repository}}" \
-          "-DSWIG_EXECUTABLE=${{steps.la_swig.outputs.swig_exec}}" 
+          "-DSWIG_EXECUTABLE=${{steps.la_swig.outputs.swig_exec}}"
 
     - name: Build All
       # Build your program with the given configuration
@@ -73,7 +73,7 @@ jobs:
         if [ "${{matrix.config}}" = "debug" ]; then
           test_cmd="./Tests-d --gtest_filter=-MANUAL*"
         fi
-        eval $test_cmd 
+        eval $test_cmd
 
     - name: Push package
       run : |
@@ -106,7 +106,7 @@ jobs:
     - name: Configure CMake
       shell: bash
       run: |
-        echo "Generating CMake for Configuration : ${{matrix.config}}" 
+        echo "Generating CMake for Configuration : ${{matrix.config}}"
 
         arch=$([ ${{runner.arch}} = "X64" ] && echo "x64" || echo "arm64")
         ./gen_cmake.sh -o ${{env.build_dir}} -${{matrix.config}} -build-csharp -c Ninja -arch $arch -- \
@@ -117,7 +117,7 @@ jobs:
 
     - name: Build All
       # Build your program with the given configuration
-      run: cmake --build ${{env.build_dir}} 
+      run: cmake --build ${{env.build_dir}}
     - name: Test
       working-directory: ${{github.workspace}}/${{env.build_dir}}/tests/src
       shell: bash
@@ -126,14 +126,14 @@ jobs:
         if [ "${{matrix.config}}" = "debug" ]; then
           test_cmd="./Tests-d --gtest_filter=-MANUAL*"
         fi
-        eval $test_cmd 
+        eval $test_cmd
 
     - name: Push package
       run : |
           # add source
           dotnet nuget add source --username "L-Acoustics" --password ${{env.GITHUB_TOKEN}} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/L-Acoustics/index.json"
           cmake --build ${{env.build_dir}} --target ${{env.lib_name}}-csharp-nuget-push
-          
+
   release-macos:
     strategy:
       fail-fast: false
@@ -157,12 +157,12 @@ jobs:
     - name: Configure CMake
       shell: bash
       run: |
-        echo "Generating CMake for Configuration : ${{matrix.config}}" 
+        echo "Generating CMake for Configuration : ${{matrix.config}}"
         ./gen_cmake.sh -o ${{env.build_dir}} -${{matrix.config}} -c Ninja -build-csharp -all-archs -- \
           "-DNUGET_PUBLISH_SOURCE_URL=${{env.NUGET_FEED_URL}}" \
           "-DSWIG_DIR=${{steps.la_swig.outputs.swig_dir}}" \
           "-DCU_REPO_URL=https://github.com/${{github.repository}}" \
-          "-DSWIG_EXECUTABLE=${{steps.la_swig.outputs.swig_exec}}" 
+          "-DSWIG_EXECUTABLE=${{steps.la_swig.outputs.swig_exec}}"
 
     - name: Build All
       # Build your program with the given configuration
@@ -176,14 +176,14 @@ jobs:
         if [ "${{matrix.config}}" = "debug" ]; then
           test_cmd="./Tests-d --gtest_filter=-MANUAL*"
         fi
-        eval $test_cmd 
+        eval $test_cmd
 
     - name: Push package
       run : |
           # add source
           dotnet nuget add source --username "L-Acoustics" --password ${{env.GITHUB_TOKEN}} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/L-Acoustics/index.json"
           cmake --build ${{env.build_dir}} --target ${{env.lib_name}}-csharp-nuget-push
-  
+
   create-gh-release:
     needs: [release-macos,release-windows,release-linux]
     runs-on: ubuntu-22.04
@@ -197,4 +197,4 @@ jobs:
         if: github.ref_type == 'tag'
         with:
           prerelease: ${{ contains(github.ref_name, 'beta') }}
-  
+
