@@ -26,7 +26,7 @@
 %apply const unsigned long long & { const size_t & };
 #endif
 
-
+// Include some SWIG typemaps
 %include <stl.i>
 %include <std_string.i>
 %include <std_pair.i>
@@ -38,9 +38,9 @@
 %include <arrays_csharp.i>
 #endif
 
-// Generated wrapper file needs to include our header file
-%{
-		#include <la/networkInterfaceHelper/networkInterfaceHelper.hpp>
+// Generated wrapper file needs to include our header file (include as soon as possible using 'insert(runtime)' as target language exceptions are defined early in the generated wrapper file)
+%insert(runtime) %{
+	#include <la/networkInterfaceHelper/networkInterfaceHelper.hpp>
 %}
 
 #if defined(SWIGCSHARP)
