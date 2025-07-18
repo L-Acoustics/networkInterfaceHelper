@@ -4,6 +4,10 @@ All notable changes to the LA Network Interface Helper Library will be documente
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.2.7] - 2025-07-18
+### Fixed
+- C# Marshalling of std::string as UTF8Str
+
 ## [1.2.6] - 2025-05-22
 ### Added
 - Missing IPv6 operators to `IPAddress` (comparison, addition, substraction).
