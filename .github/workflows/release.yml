@@ -29,7 +29,7 @@ env:
   NUGET_LA_FEED_URL: https://nuget.pkg.github.com/L-Acoustics/index.json
   lib_name: la_networkInterfaceHelper
   build_dir: _build
-  GITHUB_TOKEN: ${{secrets.FRANADR_PAT}}
+  GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
 jobs:
   release-linux:
@@ -164,8 +164,7 @@ jobs:
         echo "Generating CMake for Configuration : ${{matrix.config}}"
         dotnet nuget add source --username "${{github.repository_owner}}" --password ${{env.GITHUB_TOKEN}} --store-password-in-clear-text --name current_feed "${{env.NUGET_CURRENT_FEED_URL}}"
 
-        arch=$([ ${{runner.arch}} = "X64" ] && echo "x64" || echo "arm64")
-        ./gen_cmake.sh -o ${{env.build_dir}} -${{matrix.config}} -c Ninja -build-csharp -arch $arch -- \
+        ./gen_cmake.sh -o ${{env.build_dir}} -${{matrix.config}} -c Ninja -build-csharp -all-archs -- \
           "-DNUGET_PUBLISH_SOURCE_URL=current_feed" \
           "-DSWIG_DIR=${{steps.la_swig.outputs.swig_dir}}" \
           "-DCU_REPO_URL=https://github.com/${{github.repository}}" \
