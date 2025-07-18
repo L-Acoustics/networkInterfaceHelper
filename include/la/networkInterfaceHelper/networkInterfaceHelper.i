@@ -12,10 +12,6 @@
 	$result = new $1_ltype($1);
 %}
 #pragma SWIG nowarn=474
-// Marshal all std::string as UTF8Str
-%typemap(imtype, outattributes="[return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)]", inattributes="[System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)] ") std::string, std::string const& "string"
-// Better debug display
-%typemap(csattributes) la::networkInterface::IPAddress "[System.Diagnostics.DebuggerDisplay(\"{toString()}\")]"
 // Expose internal constructor and methods publicly, some dependant modules may need it
 #	if !defined(SWIGIMPORTED)
 #	define PUBLIC_BUT_HIDDEN [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)] public
@@ -47,6 +43,10 @@
 		#include <la/networkInterfaceHelper/networkInterfaceHelper.hpp>
 %}
 
+#if defined(SWIGCSHARP)
+// Marshal all std::string as UTF8Str
+%typemap(imtype, outattributes="[return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)]", inattributes="[System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)] ") std::string, std::string const& "string"
+#endif
 
 ////////////////////////////////////////
 // Global functions
@@ -69,6 +69,7 @@
 %ignore la::networkInterface::IPAddress::MappedV6; // Ignore MappedV6 (not needed)
 %ignore la::networkInterface::IPAddress::hash; // Ignore hash (not needed)
 %rename("toString") la::networkInterface::IPAddress::operator std::string;
+%typemap(csattributes) la::networkInterface::IPAddress "[System.Diagnostics.DebuggerDisplay(\"{toString()}\")]" // Better debug display
 %ignore operator++(IPAddress& lhs); // Redefined in %extend
 %ignore operator--(IPAddress& lhs); // Redefined in %extend
 %ignore operator&(IPAddress const& lhs, IPAddress const& rhs); // Redefined in %extend
