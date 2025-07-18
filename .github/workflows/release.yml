@@ -22,11 +22,14 @@ permissions:
 
 
 env:
-  NUGET_FEED_USENAME: github
-  NUGET_FEED_URL: https://nuget.pkg.github.com/${{github.repository_owner}}/index.json
+  # nuget feed url should match the destination and location of current package and dependencies.
+  #  Each sources must be added with nuget add source
+  NUGET_CURRENT_FEED_URL: https://nuget.pkg.github.com/${{github.repository_owner}}/index.json
+  # LA feed is required to fetch dependencies.
+  NUGET_LA_FEED_URL: https://nuget.pkg.github.com/L-Acoustics/index.json
   lib_name: la_networkInterfaceHelper
   build_dir: _build
-  GITHUB_TOKEN: ${{secrets.NUGET_PAT}}
+  GITHUB_TOKEN: ${{secrets.FRANADR_PAT}}
 
 jobs:
   release-linux:
@@ -53,13 +56,15 @@ jobs:
       shell: bash
       run: |
         echo "Generating CMake for Configuration : ${{matrix.config}}"
+        dotnet nuget add source --username "${{github.repository_owner}}" --password ${{env.GITHUB_TOKEN}} --store-password-in-clear-text --name current_feed "${{env.NUGET_CURRENT_FEED_URL}}"
 
         arch=$([ ${{runner.arch}} = "X64" ] && echo "x64" || echo "arm64")
         ./gen_cmake.sh -o ${{env.build_dir}} -${{matrix.config}} -c Ninja -build-csharp -arch $arch -- \
-          "-DNUGET_PUBLISH_SOURCE_URL=${{env.NUGET_FEED_URL}}" \
+          "-DNUGET_PUBLISH_SOURCE_URL=current_feed" \
           "-DSWIG_DIR=${{steps.la_swig.outputs.swig_dir}}" \
           "-DCU_REPO_URL=https://github.com/${{github.repository}}" \
-          "-DSWIG_EXECUTABLE=${{steps.la_swig.outputs.swig_exec}}"
+          "-DSWIG_EXECUTABLE=${{steps.la_swig.outputs.swig_exec}}" \
+          "-DBUILD_ATDECC_AUTOMATION_EXAMPLES=FALSE"
 
     - name: Build All
       # Build your program with the given configuration
@@ -77,8 +82,6 @@ jobs:
 
     - name: Push package
       run : |
-          # add source
-          dotnet nuget add source --username "L-Acoustics" --password ${{env.GITHUB_TOKEN}} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/L-Acoustics/index.json"
           cmake --build ${{env.build_dir}} --target ${{env.lib_name}}-csharp-nuget-push
 
   release-windows:
@@ -107,13 +110,15 @@ jobs:
       shell: bash
       run: |
         echo "Generating CMake for Configuration : ${{matrix.config}}"
+        dotnet nuget add source --username "${{github.repository_owner}}" --password ${{env.GITHUB_TOKEN}} --store-password-in-clear-text --name current_feed "${{env.NUGET_CURRENT_FEED_URL}}"
 
         arch=$([ ${{runner.arch}} = "X64" ] && echo "x64" || echo "arm64")
-        ./gen_cmake.sh -o ${{env.build_dir}} -${{matrix.config}} -build-csharp -c Ninja -arch $arch -- \
-          "-DNUGET_PUBLISH_SOURCE_URL=${{env.NUGET_FEED_URL}}" \
+        ./gen_cmake.sh -o ${{env.build_dir}} -${{matrix.config}} -c Ninja -build-csharp -arch $arch -- \
+          "-DNUGET_PUBLISH_SOURCE_URL=current_feed" \
           "-DSWIG_DIR=${{steps.la_swig.outputs.swig_dir}}" \
           "-DCU_REPO_URL=https://github.com/${{github.repository}}" \
-          "-DSWIG_EXECUTABLE=${{steps.la_swig.outputs.swig_exec}}"
+          "-DSWIG_EXECUTABLE=${{steps.la_swig.outputs.swig_exec}}" \
+          "-DBUILD_ATDECC_AUTOMATION_EXAMPLES=FALSE"
 
     - name: Build All
       # Build your program with the given configuration
@@ -131,7 +136,6 @@ jobs:
     - name: Push package
       run : |
           # add source
-          dotnet nuget add source --username "L-Acoustics" --password ${{env.GITHUB_TOKEN}} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/L-Acoustics/index.json"
           cmake --build ${{env.build_dir}} --target ${{env.lib_name}}-csharp-nuget-push
 
   release-macos:
@@ -158,11 +162,15 @@ jobs:
       shell: bash
       run: |
         echo "Generating CMake for Configuration : ${{matrix.config}}"
-        ./gen_cmake.sh -o ${{env.build_dir}} -${{matrix.config}} -c Ninja -build-csharp -all-archs -- \
-          "-DNUGET_PUBLISH_SOURCE_URL=${{env.NUGET_FEED_URL}}" \
+        dotnet nuget add source --username "${{github.repository_owner}}" --password ${{env.GITHUB_TOKEN}} --store-password-in-clear-text --name current_feed "${{env.NUGET_CURRENT_FEED_URL}}"
+
+        arch=$([ ${{runner.arch}} = "X64" ] && echo "x64" || echo "arm64")
+        ./gen_cmake.sh -o ${{env.build_dir}} -${{matrix.config}} -c Ninja -build-csharp -arch $arch -- \
+          "-DNUGET_PUBLISH_SOURCE_URL=current_feed" \
           "-DSWIG_DIR=${{steps.la_swig.outputs.swig_dir}}" \
           "-DCU_REPO_URL=https://github.com/${{github.repository}}" \
-          "-DSWIG_EXECUTABLE=${{steps.la_swig.outputs.swig_exec}}"
+          "-DSWIG_EXECUTABLE=${{steps.la_swig.outputs.swig_exec}}" \
+          "-DBUILD_ATDECC_AUTOMATION_EXAMPLES=FALSE"
 
     - name: Build All
       # Build your program with the given configuration
@@ -181,7 +189,6 @@ jobs:
     - name: Push package
       run : |
           # add source
-          dotnet nuget add source --username "L-Acoustics" --password ${{env.GITHUB_TOKEN}} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/L-Acoustics/index.json"
           cmake --build ${{env.build_dir}} --target ${{env.lib_name}}-csharp-nuget-push
 
   create-gh-release:
