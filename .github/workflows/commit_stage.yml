@@ -11,86 +11,11 @@ on :
       - '**/LICENCE'
 
 jobs:
-  validate:
-    runs-on: windows-2022
-    outputs:
-      runners: ${{ steps.runners-matrix.outputs.runners }}
-    steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: recursive
-    - name: Install job dependencies
-      shell: bash
-      run: |
-        choco install -y dos2unix jq
-        curl https://www.kikisoft.com/Hive/clang-format/clang-format-7.0.0-LambdaPatch-windows.exe -o clang-format.exe
-        ln -s $(pwd)/clang-format.exe /usr/bin/clang-format
+  commit-stage:
+    uses: L-Acoustics/la-mw-gh-action/.github/workflows/commit_stage.yml@main
+    secrets:
+      GH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      KEYCHAIN_PASSWORD: ${{secrets.KEYCHAIN_PASSWORD}}
+      APPLE_CERTIFICATES_P12_BASE64_PASSWORD: ${{secrets.APPLE_CERTIFICATES_P12_BASE64_PASSWORD}}
+      APPLE_CERTIFICATES_P12_BASE64: ${{secrets.APPLE_CERTIFICATES_P12_BASE64}}
 
-    - name: Run fix_files
-      shell: bash {0}
-      run: |
-        ./scripts/bashUtils/fix_files.sh
-
-    - name: Check for changes
-      shell: bash
-      run: |
-        git diff --name-status --exit-code
-        if [ $? -ne 0 ]; then
-          echo "Some files need formatting/fixing. Please run the script and commit the changes."
-          exit 1
-        fi
-    - name: prepare-runners-matrix
-      id: runners-matrix
-      shell: bash
-      run: |
-        macos=$([ ${{vars.BUILD_MACOS}} = "true"  ] && jq -n --argjson r '${{vars.RUNNER_LABELS_MACOS}}' '$r' || echo '""')
-        echo $macos
-        linux=$([ ${{vars.BUILD_LINUX}} = "true"  ] && jq -n --argjson r '${{vars.RUNNER_LABELS_LINUX}}' '$r' || echo '""')
-        echo $linux
-        windows=$([ ${{vars.BUILD_WINDOWS}} = "true"  ] && jq -n --argjson r '${{vars.RUNNER_LABELS_WINDOWS}}' '$r' || echo '""')
-        echo $windows
-
-        runners=$(jq -n --argjson m "$macos" --argjson l "$linux" --argjson w "$windows" '[$m,$l,$w]' | jq 'del(.[] | select(. == ""))' | tr -d '\n' )
-        echo $runners
-        echo "runners=$runners" >> "$GITHUB_OUTPUT"
-
-  build-test:
-    needs: validate
-    env:
-      LC_ALL: en_US.UTF-8
-
-    strategy:
-      fail-fast: false
-      matrix:
-        config:
-          - debug
-          - release
-        runner-label: ${{ fromJSON(needs.validate.outputs.runners) }}
-
-    runs-on: ${{matrix.runner-label}}
-    steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: recursive
-
-    - uses: L-Acoustics/la-mw-gh-action/.github/actions/la-swig@v0
-      name: Install custom SWIG
-      id: la_swig
-
-
-    - name: Configure runner
-      uses: L-Acoustics/la-mw-gh-action/.github/actions/la-configure-runner@v0
-
-    - name: Build and Test Library
-      uses: L-Acoustics/la-mw-gh-action/.github/actions/la-build@e368cc944233da2d9b61c7bc3e6108cacf20b174
-      with:
-        push_bindings: 'false'
-        GTEST_FILTER: '-MANUAL*'
-        SWIG_EXEC: ${{steps.la_swig.outputs.swig_exec}}
-        SWIG_DIR: ${{steps.la_swig.outputs.swig_dir}}
-        BUILD_DIR: "_build"
-        include_nuget_la_feed_url: 'false'
-        CONFIG: ${{matrix.config}}
-        NUGET_CURRENT_FEED_URL: 'https://nuget.pkg.github.com/L-Acoustics/index.json'
-        LIB_NAME: "la_networkInterfaceHelper"
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
