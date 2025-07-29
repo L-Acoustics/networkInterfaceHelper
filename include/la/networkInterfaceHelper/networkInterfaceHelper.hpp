@@ -302,6 +302,15 @@ struct Interface
 	bool isEnabled{ false }; /** True if this interface is enabled */
 	bool isConnected{ false }; /** True if this interface is connected to a working network (able to send and receive packets) */
 	bool isVirtual{ false }; /** True if this interface is emulating a physical adapter (Like BlueTooth, VirtualMachine, or Software Loopback) */
+
+	constexpr friend bool operator==(Interface const& lhs, Interface const& rhs) noexcept
+	{
+		return lhs.id == rhs.id && lhs.description == rhs.description && lhs.alias == rhs.alias && lhs.macAddress == rhs.macAddress && lhs.ipAddressInfos == rhs.ipAddressInfos && lhs.gateways == rhs.gateways && lhs.type == rhs.type && lhs.isEnabled == rhs.isEnabled && lhs.isConnected == rhs.isConnected && lhs.isVirtual == rhs.isVirtual;
+	}
+	constexpr friend bool operator!=(Interface const& lhs, Interface const& rhs) noexcept
+	{
+		return !(lhs == rhs);
+	}
 };
 
 /** MacAddress hash functor to be used for std::hash */
