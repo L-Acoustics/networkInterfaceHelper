@@ -60,6 +60,8 @@
 ////////////////////////////////////////
 %nspace la::networkInterface::IPAddress;
 %ignore la::networkInterface::IPAddress::IPAddress(IPAddress&&); // Ignore move constructor
+%ignore la::networkInterface::IPAddress::operator=(IPAddress const&); // Ignore copy assignment operator
+%ignore la::networkInterface::IPAddress::operator=(IPAddress&&); // Ignore move assignment operator
 %ignore la::networkInterface::IPAddress::operator bool; // Ignore bool operator (equivalent to isValid)
 %ignore la::networkInterface::IPAddress::operator value_type_v4; // Ignore value_type_v4 operator (equivalent to getIPV4)
 %ignore la::networkInterface::IPAddress::operator value_type_v6; // Ignore value_type_v6 operator (equivalent to getIPV6)
@@ -70,6 +72,12 @@
 %ignore la::networkInterface::IPAddress::hash; // Ignore hash (not needed)
 %rename("toString") la::networkInterface::IPAddress::operator std::string;
 %typemap(csattributes) la::networkInterface::IPAddress "[System.Diagnostics.DebuggerDisplay(\"{toString()}\")]" // Better debug display
+%ignore operator==(IPAddress const& lhs, IPAddress const& rhs); // Redefined in %extend
+%ignore operator!=(IPAddress const& lhs, IPAddress const& rhs); // Ignored
+%ignore operator<(IPAddress const& lhs, IPAddress const& rhs); // Ignored
+%ignore operator<=(IPAddress const& lhs, IPAddress const& rhs); // Ignored
+%ignore operator+(IPAddress const& lhs, std::uint32_t const value); // Ignored
+%ignore operator-(IPAddress const& lhs, std::uint32_t const value); // Ignored
 %ignore operator++(IPAddress& lhs); // Redefined in %extend
 %ignore operator--(IPAddress& lhs); // Redefined in %extend
 %ignore operator&(IPAddress const& lhs, IPAddress const& rhs); // Redefined in %extend
@@ -126,11 +134,17 @@
 // IPAddressInfo
 ////////////////////////////////////////
 %nspace la::networkInterface::IPAddressInfo;
+%ignore operator==(IPAddressInfo const& lhs, IPAddressInfo const& rhs); // Ignored
+%ignore operator!=(IPAddressInfo const& lhs, IPAddressInfo const& rhs); // Ignored
+%ignore operator<(IPAddressInfo const& lhs, IPAddressInfo const& rhs); // Ignored
+%ignore operator<=(IPAddressInfo const& lhs, IPAddressInfo const& rhs); // Ignored
 
 ////////////////////////////////////////
 // Interface
 ////////////////////////////////////////
 %nspace la::networkInterface::Interface;
+%ignore operator==(Interface const& lhs, Interface const& rhs); // Redefined in %extend
+%ignore operator!=(Interface const& lhs, Interface const& rhs); // Ignored
 // Extend the struct
 %extend la::networkInterface::Interface
 {
@@ -148,7 +162,7 @@
 	// Provide a more native Equals() method
 	bool Equals(la::networkInterface::Interface const& other) const noexcept
 	{
-		return $self->id == other.id && $self->description == other.description && $self->alias == other.alias && $self->macAddress == other.macAddress && $self->ipAddressInfos == other.ipAddressInfos && $self->gateways == other.gateways && $self->type == other.type && $self->isEnabled == other.isEnabled && $self->isConnected == other.isConnected && $self->isVirtual == other.isVirtual;
+		return *$self == other;
 	}
 #endif
 };
