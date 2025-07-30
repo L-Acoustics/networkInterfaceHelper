@@ -203,10 +203,14 @@ int main(int /* argc */, const char* /* argv */[])
 	auto interfaceMatchIterator = IteratorGuard{};
 	auto interfaceTerminateIterator = IteratorGuard{};
 	auto notificationPort = RefGuard<IONotificationPortRef, IONotificationPortRef, &IONotificationPortDestroy>{};
-	auto masterPort = mach_port_t{ 0 };
+	auto mainPort = mach_port_t{ 0 };
 
-	IOMasterPort(mach_task_self(), &masterPort);
-	notificationPort = RefGuard<IONotificationPortRef, IONotificationPortRef, &IONotificationPortDestroy>{ IONotificationPortCreate(masterPort) };
+#if defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 120000
+	IOMainPort(mach_task_self(), &mainPort);
+#else
+	IOMasterPort(mach_task_self(), &mainPort);
+#endif
+	notificationPort = RefGuard<IONotificationPortRef, IONotificationPortRef, &IONotificationPortDestroy>{ IONotificationPortCreate(mainPort) };
 	if (notificationPort)
 	{
 		IONotificationPortSetDispatchQueue(*notificationPort, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0));

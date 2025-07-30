@@ -641,9 +641,13 @@ private:
 	{
 		// Register for Added/Removed interfaces notification (kernel events)
 		{
-			mach_port_t masterPort = 0;
-			IOMasterPort(mach_task_self(), &masterPort);
-			_notificationPort = RefGuard<IONotificationPortRef, IONotificationPortRef, &IONotificationPortDestroy>{ IONotificationPortCreate(masterPort) };
+			mach_port_t mainPort = 0;
+#if defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 120000
+			IOMainPort(mach_task_self(), &mainPort);
+#else
+			IOMasterPort(mach_task_self(), &mainPort);
+#endif
+			_notificationPort = RefGuard<IONotificationPortRef, IONotificationPortRef, &IONotificationPortDestroy>{ IONotificationPortCreate(mainPort) };
 			if (_notificationPort)
 			{
 				IONotificationPortSetDispatchQueue(*_notificationPort, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0));
