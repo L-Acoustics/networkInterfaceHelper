@@ -8,16 +8,16 @@ on:
 
   workflow_dispatch:
     inputs:
-      create_gh_release:
+      release:
         description: 'Create the Github Release.'
         type: boolean
         default: true
 
 jobs:
   release-stage:
-    uses: L-Acoustics/la-mw-gh-action/.github/workflows/release_stage.yml@dev
+    uses: L-Acoustics/la-mw-gh-action/.github/workflows/commit_stage.yml@dev
     with:
-      create_gh_release: ${{inputs.create_gh_release}}
+      release: ${{inputs.release}}
     secrets:
       GH_TOKEN: ${{secrets.GITHUB_TOKEN}}
       KEYCHAIN_PASSWORD: ${{secrets.KEYCHAIN_PASSWORD}}
