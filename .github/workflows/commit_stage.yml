@@ -12,7 +12,7 @@ on :
 
 jobs:
   commit-stage:
-    uses: L-Acoustics/la-mw-gh-action/.github/workflows/commit_stage.yml@main
+    uses: L-Acoustics/la-mw-gh-action/.github/workflows/commit_stage.yml@dev
     secrets:
       GH_TOKEN: ${{secrets.GITHUB_TOKEN}}
       KEYCHAIN_PASSWORD: ${{secrets.KEYCHAIN_PASSWORD}}
