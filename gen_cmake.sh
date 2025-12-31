@@ -17,11 +17,13 @@ fi
 # Parse variables
 gen_c=0
 gen_csharp=0
+gen_lua=0
 
 function extend_gc_fnc_help()
 {
 	echo " -build-c -> Build the C bindings library."
 	echo " -build-csharp -> Build the C# bindings library."
+	echo " -build-lua -> Build the Lua bindings library."
 }
 
 function extend_gc_fnc_unhandled_arg()
@@ -35,6 +37,10 @@ function extend_gc_fnc_unhandled_arg()
 			gen_csharp=1
 			return 1
 			;;
+		-build-lua)
+			gen_lua=1
+			return 1
+			;;
 	esac
 	return 0
 }
@@ -45,6 +51,8 @@ function extend_gc_fnc_unhandled_arg()
 
 function extend_gc_fnc_precmake()
 {
+	local swig_langs=()
+
 	if [ $gen_c -eq 1 ]; then
 		add_cmake_opt+=("-DBUILD_C_BINDINGS=TRUE")
 		add_cmake_opt+=("-DINSTALL_NIH_LIB_C=TRUE")
@@ -52,7 +60,17 @@ function extend_gc_fnc_precmake()
 	if [ $gen_csharp -eq 1 ]; then
 		add_cmake_opt+=("-DBUILD_NIH_SWIG=TRUE")
 		add_cmake_opt+=("-DINSTALL_NIH_LIB_SWIG=TRUE")
-		add_cmake_opt+=("-DNIH_SWIG_LANGUAGES=csharp")
+		swig_langs+=("csharp")
+	fi
+	if [ $gen_lua -eq 1 ]; then
+		add_cmake_opt+=("-DBUILD_NIH_SWIG=TRUE")
+		add_cmake_opt+=("-DINSTALL_NIH_LIB_SWIG=TRUE")
+		swig_langs+=("lua")
+	fi
+
+	if [ ${#swig_langs[@]} -gt 0 ]; then
+		local IFS=";"
+		add_cmake_opt+=("-DNIH_SWIG_LANGUAGES=${swig_langs[*]}")
 	fi
 }
 
@@ -69,6 +87,7 @@ function extend_gc_fnc_props_summary()
 {
 	echo "| - C Bindings: $(boolToString $gen_c)"
 	echo "| - C# Bindings: $(boolToString $gen_csharp)"
+	echo "| - Lua Bindings: $(boolToString $gen_lua)"
 }
 
 # execute gen_cmake script from bashUtils
