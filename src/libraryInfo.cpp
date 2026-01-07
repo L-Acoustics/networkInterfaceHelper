@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2025, L-Acoustics
+* Copyright (C) 2016-2026, L-Acoustics
 
 * This file is part of LA_networkInterfaceHelper.
 
