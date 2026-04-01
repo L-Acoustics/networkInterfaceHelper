@@ -581,6 +581,42 @@ private:
 						self->_commonDelegate.onIPAddressInfosChanged(std::string{ [interfaceName UTF8String] }, std::move(ipAddressInfos));
 					}
 				}
+				else if (![key hasSuffix:DYNAMIC_STORE_INTERFACE_STRING])
+				{
+					// Root service key changed (e.g. UserDefinedName was modified)
+					auto const prefixLength = [DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING length];
+					auto const* const serviceID = [key substringFromIndex:prefixLength];
+					auto const* const interfaceName = self->getInterfaceForService(serviceID);
+
+					if (interfaceName)
+					{
+						// Read the new UserDefinedName
+						auto alias = self->getUserDefinedName(store, serviceID);
+
+						// If not defined, fallback to description + id
+						if (alias.empty())
+						{
+							auto const interfaceKey = [NSString stringWithFormat:DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING @"%@" DYNAMIC_STORE_INTERFACE_STRING, serviceID];
+							auto const interfaceValue = RefGuard{ SCDynamicStoreCopyValue(store, static_cast<CFStringRef>(interfaceKey)) };
+							if (interfaceValue)
+							{
+								auto* const description = (NSString*)[(__bridge NSDictionary const*)*interfaceValue valueForKey:@"UserDefinedName"];
+								if (description)
+								{
+									alias = getStdString(description) + " (" + getStdString(interfaceName) + ")";
+								}
+							}
+							// Last resort fallback
+							if (alias.empty())
+							{
+								alias = getStdString(interfaceName);
+							}
+						}
+
+						// Notify
+						self->_commonDelegate.onAliasChanged(getStdString(interfaceName), std::move(alias));
+					}
+				}
 			}
 		}
 	}
@@ -672,6 +708,7 @@ private:
 			[scKeys addObject:DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING @"[^/]+" DYNAMIC_STORE_IPV4_STRING]; // Monitor changes in the IPv4 Setup
 			[scKeys addObject:DYNAMIC_STORE_NETWORK_STATE_INTERFACE_STRING @"[^/]+" DYNAMIC_STORE_IPV6_STRING]; // Monitor changes in the IPv6 State
 			[scKeys addObject:DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING @"[^/]+" DYNAMIC_STORE_IPV6_STRING]; // Monitor changes in the IPv6 Setup
+			[scKeys addObject:DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING @"[^/]+"]; // Monitor changes in the Service setup (UserDefinedName, etc.)
 
 			/* Connect to the dynamic store */
 			auto ctx = SCDynamicStoreContext{ 0, this, NULL, NULL, NULL };
