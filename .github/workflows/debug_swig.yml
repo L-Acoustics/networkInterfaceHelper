@@ -1,0 +1,48 @@
+name: Debug SWIG PCRE2
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug-pcre2:
+    runs-on: windows-latest
+    steps:
+      - name: Install PCRE2 via NuGet
+        run: |
+          nuget install PCRE2 -OutputDirectory $env:GITHUB_WORKSPACE\tools
+        shell: pwsh
+
+      - name: PCRE2 package - full tree structure
+        run: Get-ChildItem -Recurse $env:GITHUB_WORKSPACE\tools\PCRE2* | Select-Object FullName
+        shell: pwsh
+
+      - name: PCRE2 package - DLLs and LIBs only
+        run: Get-ChildItem -Recurse $env:GITHUB_WORKSPACE\tools\PCRE2* -Include *.dll,*.lib | Select-Object FullName
+        shell: pwsh
+
+      - name: Clone SWIG at same commit as la-swig action
+        run: |
+          git clone https://github.com/niclasr/swig.git swig
+          cd swig
+          git checkout aa3dcdb1
+        shell: bash
+
+      - name: Show FindPCRE2.cmake search logic
+        run: Get-Content swig\Tools\cmake\FindPCRE2.cmake
+        shell: pwsh
+
+      - name: Test CMake configure with PCRE2_ROOT
+        run: |
+          cmake -G "Visual Studio 17 2022" -A x64 `
+            -DPCRE2_ROOT="$env:GITHUB_WORKSPACE\tools\PCRE2.10.47.0" `
+            -S swig -B swig\build
+        shell: pwsh
+        continue-on-error: true
+
+      - name: Test CMake configure with CMAKE_PREFIX_PATH
+        run: |
+          cmake -G "Visual Studio 17 2022" -A x64 `
+            -DCMAKE_PREFIX_PATH="$env:GITHUB_WORKSPACE\tools\PCRE2.10.47.0" `
+            -S swig -B swig\build2
+        shell: pwsh
+        continue-on-error: true
