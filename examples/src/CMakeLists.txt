@@ -54,4 +54,10 @@ if(BUILD_NIH_SWIG)
 			add_subdirectory(networkInterfacesEnumeratorCSharp)
 		endif()
 	endif()
+
+	# If "lua" is listed in NIH_SWIG_LANGUAGES
+	if("lua" IN_LIST NIH_SWIG_LANGUAGES)
+		# Network interfaces enumerator using Lua bindings
+		add_subdirectory(networkInterfacesEnumeratorLua)
+	endif()
 endif()

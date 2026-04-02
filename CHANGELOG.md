@@ -4,7 +4,15 @@ All notable changes to the LA Network Interface Helper Library will be documente
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.2.9] - 2026-04-02
+### Fixed
+- On macOS, correctly tracking changes to the user defined name of the interface.
+- On macOS, correctly tracking changes to the interface status (e.g. unplugged/plugged) and service status (e.g. enabled/disabled).
+
 ## [1.2.8] - 2025-07-29
+### Fixed
+- Updated CI
+- Fixed some SWIG warnings
 
 ## [1.2.7] - 2025-07-18
 ### Fixed

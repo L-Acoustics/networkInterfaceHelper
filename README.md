@@ -2,7 +2,7 @@
 [![Windows](https://github.com/L-Acoustics/networkInterfaceHelper/actions/workflows/windows.yml/badge.svg)](https://github.com/L-Acoustics/networkInterfaceHelper/actions/workflows/windows.yml)
 [![Macos](https://github.com/L-Acoustics/networkInterfaceHelper/actions/workflows/macos.yml/badge.svg)](https://github.com/L-Acoustics/networkInterfaceHelper/actions/workflows/macos.yml)
 # LA Network Interface Helper Library
-Copyright (C) 2016-2025, L-Acoustics
+Copyright (C) 2016-2026, L-Acoustics
 
 ## What is LA_networkInterfaceHelper
 LA_networkInterfaceHelper is a lightweight open source library for enumerating Network Interfaces and monitoring any state change.

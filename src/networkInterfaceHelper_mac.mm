@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2025, L-Acoustics
+* Copyright (C) 2016-2026, L-Acoustics
 
 * This file is part of LA_networkInterfaceHelper.
 
@@ -530,8 +530,9 @@ private:
 		auto const lg = std::lock_guard{ self->_notificationLock };
 
 		auto const count = CFArrayGetCount(changedKeys);
+		auto needsFullRefresh = false;
 
-		for (auto index = CFIndex{ 0 }; index < count; ++index)
+		for (auto index = CFIndex{ 0 }; index < count && !needsFullRefresh; ++index)
 		{
 			auto const* const keyRef = static_cast<CFStringRef>(CFArrayGetValueAtIndex(changedKeys, index));
 			auto const* const key = (__bridge NSString const*)keyRef;
@@ -565,7 +566,12 @@ private:
 			}
 			else if ([key hasPrefix:DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING])
 			{
-				if ([key hasSuffix:DYNAMIC_STORE_IPV4_STRING] || [key hasSuffix:DYNAMIC_STORE_IPV6_STRING])
+				if ([key hasSuffix:DYNAMIC_STORE_INTERFACE_STRING])
+				{
+					// Service interface structure changed (service added/removed/modified), full refresh needed
+					needsFullRefresh = true;
+				}
+				else if ([key hasSuffix:DYNAMIC_STORE_IPV4_STRING] || [key hasSuffix:DYNAMIC_STORE_IPV6_STRING])
 				{
 					auto const prefixLength = [DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING length];
 					auto const suffixLength = ([key hasSuffix:DYNAMIC_STORE_IPV4_STRING]) ? [DYNAMIC_STORE_IPV4_STRING length] : [DYNAMIC_STORE_IPV6_STRING length];
@@ -580,8 +586,62 @@ private:
 						// Notify
 						self->_commonDelegate.onIPAddressInfosChanged(std::string{ [interfaceName UTF8String] }, std::move(ipAddressInfos));
 					}
+					else
+					{
+						// Unknown service (might have been activated while inactive at startup), full refresh needed
+						needsFullRefresh = true;
+					}
+				}
+				else
+				{
+					// Root service key changed (e.g. UserDefinedName was modified)
+					auto const prefixLength = [DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING length];
+					auto const* const serviceID = [key substringFromIndex:prefixLength];
+					auto const* const interfaceName = self->getInterfaceForService(serviceID);
+
+					if (interfaceName)
+					{
+						// Read the new UserDefinedName
+						auto alias = self->getUserDefinedName(store, serviceID);
+
+						// If not defined, fallback to description + id
+						if (alias.empty())
+						{
+							auto const interfaceKey = [NSString stringWithFormat:DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING @"%@" DYNAMIC_STORE_INTERFACE_STRING, serviceID];
+							auto const interfaceValue = RefGuard{ SCDynamicStoreCopyValue(store, static_cast<CFStringRef>(interfaceKey)) };
+							if (interfaceValue)
+							{
+								auto* const description = (NSString*)[(__bridge NSDictionary const*)*interfaceValue valueForKey:@"UserDefinedName"];
+								if (description)
+								{
+									alias = getStdString(description) + " (" + getStdString(interfaceName) + ")";
+								}
+							}
+							// Last resort fallback
+							if (alias.empty())
+							{
+								alias = getStdString(interfaceName);
+							}
+						}
+
+						// Notify
+						self->_commonDelegate.onAliasChanged(getStdString(interfaceName), std::move(alias));
+					}
+					else
+					{
+						// Unknown service (might have been activated while inactive at startup), full refresh needed
+						needsFullRefresh = true;
+					}
 				}
 			}
+		}
+
+		// If a structural service change was detected (e.g. service activated/deactivated), do a full refresh
+		if (needsFullRefresh)
+		{
+			auto newList = Interfaces{};
+			self->refreshInterfaces(newList);
+			self->_commonDelegate.onNewInterfacesList(std::move(newList));
 		}
 	}
 
@@ -641,9 +701,13 @@ private:
 	{
 		// Register for Added/Removed interfaces notification (kernel events)
 		{
-			mach_port_t masterPort = 0;
-			IOMasterPort(mach_task_self(), &masterPort);
-			_notificationPort = RefGuard<IONotificationPortRef, IONotificationPortRef, &IONotificationPortDestroy>{ IONotificationPortCreate(masterPort) };
+			mach_port_t mainPort = 0;
+#if defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 120000
+			IOMainPort(mach_task_self(), &mainPort);
+#else
+			IOMasterPort(mach_task_self(), &mainPort);
+#endif
+			_notificationPort = RefGuard<IONotificationPortRef, IONotificationPortRef, &IONotificationPortDestroy>{ IONotificationPortCreate(mainPort) };
 			if (_notificationPort)
 			{
 				IONotificationPortSetDispatchQueue(*_notificationPort, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0));
@@ -668,6 +732,8 @@ private:
 			[scKeys addObject:DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING @"[^/]+" DYNAMIC_STORE_IPV4_STRING]; // Monitor changes in the IPv4 Setup
 			[scKeys addObject:DYNAMIC_STORE_NETWORK_STATE_INTERFACE_STRING @"[^/]+" DYNAMIC_STORE_IPV6_STRING]; // Monitor changes in the IPv6 State
 			[scKeys addObject:DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING @"[^/]+" DYNAMIC_STORE_IPV6_STRING]; // Monitor changes in the IPv6 Setup
+			[scKeys addObject:DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING @"[^/]+"]; // Monitor changes in the Service setup (UserDefinedName, etc.)
+			[scKeys addObject:DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING @"[^/]+" DYNAMIC_STORE_INTERFACE_STRING]; // Monitor changes in the Service interface structure (service activated/deactivated)
 
 			/* Connect to the dynamic store */
 			auto ctx = SCDynamicStoreContext{ 0, this, NULL, NULL, NULL };
