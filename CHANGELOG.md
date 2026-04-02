@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 ### Fixed
 - On macOS, correctly tracking changes to the user defined name of the interface.
+- On macOS, correctly tracking changes to the interface status (e.g. unplugged/plugged) and service status (e.g. enabled/disabled).
 
 ## [1.2.8] - 2025-07-29
 ### Fixed

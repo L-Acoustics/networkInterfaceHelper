@@ -530,8 +530,9 @@ private:
 		auto const lg = std::lock_guard{ self->_notificationLock };
 
 		auto const count = CFArrayGetCount(changedKeys);
+		auto needsFullRefresh = false;
 
-		for (auto index = CFIndex{ 0 }; index < count; ++index)
+		for (auto index = CFIndex{ 0 }; index < count && !needsFullRefresh; ++index)
 		{
 			auto const* const keyRef = static_cast<CFStringRef>(CFArrayGetValueAtIndex(changedKeys, index));
 			auto const* const key = (__bridge NSString const*)keyRef;
@@ -565,7 +566,12 @@ private:
 			}
 			else if ([key hasPrefix:DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING])
 			{
-				if ([key hasSuffix:DYNAMIC_STORE_IPV4_STRING] || [key hasSuffix:DYNAMIC_STORE_IPV6_STRING])
+				if ([key hasSuffix:DYNAMIC_STORE_INTERFACE_STRING])
+				{
+					// Service interface structure changed (service added/removed/modified), full refresh needed
+					needsFullRefresh = true;
+				}
+				else if ([key hasSuffix:DYNAMIC_STORE_IPV4_STRING] || [key hasSuffix:DYNAMIC_STORE_IPV6_STRING])
 				{
 					auto const prefixLength = [DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING length];
 					auto const suffixLength = ([key hasSuffix:DYNAMIC_STORE_IPV4_STRING]) ? [DYNAMIC_STORE_IPV4_STRING length] : [DYNAMIC_STORE_IPV6_STRING length];
@@ -580,8 +586,13 @@ private:
 						// Notify
 						self->_commonDelegate.onIPAddressInfosChanged(std::string{ [interfaceName UTF8String] }, std::move(ipAddressInfos));
 					}
+					else
+					{
+						// Unknown service (might have been activated while inactive at startup), full refresh needed
+						needsFullRefresh = true;
+					}
 				}
-				else if (![key hasSuffix:DYNAMIC_STORE_INTERFACE_STRING])
+				else
 				{
 					// Root service key changed (e.g. UserDefinedName was modified)
 					auto const prefixLength = [DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING length];
@@ -616,8 +627,21 @@ private:
 						// Notify
 						self->_commonDelegate.onAliasChanged(getStdString(interfaceName), std::move(alias));
 					}
+					else
+					{
+						// Unknown service (might have been activated while inactive at startup), full refresh needed
+						needsFullRefresh = true;
+					}
 				}
 			}
+		}
+
+		// If a structural service change was detected (e.g. service activated/deactivated), do a full refresh
+		if (needsFullRefresh)
+		{
+			auto newList = Interfaces{};
+			self->refreshInterfaces(newList);
+			self->_commonDelegate.onNewInterfacesList(std::move(newList));
 		}
 	}
 
@@ -709,6 +733,7 @@ private:
 			[scKeys addObject:DYNAMIC_STORE_NETWORK_STATE_INTERFACE_STRING @"[^/]+" DYNAMIC_STORE_IPV6_STRING]; // Monitor changes in the IPv6 State
 			[scKeys addObject:DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING @"[^/]+" DYNAMIC_STORE_IPV6_STRING]; // Monitor changes in the IPv6 Setup
 			[scKeys addObject:DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING @"[^/]+"]; // Monitor changes in the Service setup (UserDefinedName, etc.)
+			[scKeys addObject:DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING @"[^/]+" DYNAMIC_STORE_INTERFACE_STRING]; // Monitor changes in the Service interface structure (service activated/deactivated)
 
 			/* Connect to the dynamic store */
 			auto ctx = SCDynamicStoreContext{ 0, this, NULL, NULL, NULL };
