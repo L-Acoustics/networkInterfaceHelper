@@ -60,6 +60,7 @@
 #include <unordered_map>
 #include <memory>
 #include <string>
+#include <vector>
 #include <mutex> // once, mutex
 #include <cstring> // memcpy
 #include <thread>
@@ -421,6 +422,26 @@ private:
 
 			if (store)
 			{
+				// Read the ServiceOrder to determine priority when multiple services exist for the same interface
+				// Note: Despite being under the "IPv4" key, this contains the global ordering for ALL network services (including IPv6-only ones)
+				auto serviceOrder = std::vector<std::string>{};
+				{
+					auto const serviceOrderKey = static_cast<CFStringRef>(@"Setup:/Network/Global/IPv4");
+					auto const serviceOrderValue = RefGuard{ SCDynamicStoreCopyValue(*store, serviceOrderKey) };
+					if (serviceOrderValue)
+					{
+						auto* const orderArray = (NSArray*)[(__bridge NSDictionary const*)*serviceOrderValue valueForKey:@"ServiceOrder"];
+						if (orderArray)
+						{
+							for (NSUInteger i = 0; i < [orderArray count]; ++i)
+							{
+								auto* const serviceID = (NSString*)[orderArray objectAtIndex:i];
+								serviceOrder.push_back(getStdString(serviceID));
+							}
+						}
+					}
+				}
+
 				// List all services and retrieve the attached interface
 				auto const serviceKeys = DYNAMIC_STORE_NETWORK_SETUP_SERVICE_STRING @"[^/]+" DYNAMIC_STORE_INTERFACE_STRING;
 				auto const* const serviceKeysRef = static_cast<CFStringRef>(serviceKeys);
@@ -428,6 +449,9 @@ private:
 				if (servicesArray)
 				{
 					auto const count = CFArrayGetCount(*servicesArray);
+
+					// Map to track the best (highest priority) service index for each interface
+					auto interfaceServicePriority = std::unordered_map<std::string, std::size_t>{};
 
 					// Process all services found
 					for (auto index = CFIndex{ 0 }; index < count; ++index)
@@ -452,12 +476,26 @@ private:
 								auto const suffixLength = [DYNAMIC_STORE_INTERFACE_STRING length];
 								auto const* const serviceID = [key substringWithRange:NSMakeRange(prefixLength, [key length] - prefixLength - suffixLength)];
 
+								// Determine this service's priority (position in ServiceOrder, lower is higher priority)
+								auto const std_serviceID = getStdString(serviceID);
+								auto const orderIt = std::find(serviceOrder.begin(), serviceOrder.end(), std_serviceID);
+								auto const priority = (orderIt != serviceOrder.end()) ? static_cast<std::size_t>(std::distance(serviceOrder.begin(), orderIt)) : serviceOrder.size();
+
+								// Check if we already have a higher-priority service for this interface
+								auto const interfaceID = getStdString(deviceName);
+								auto const priorityIt = interfaceServicePriority.find(interfaceID);
+								if (priorityIt != interfaceServicePriority.end() && priorityIt->second <= priority)
+								{
+									// Already have a higher or equal priority service for this interface, skip
+									continue;
+								}
+								interfaceServicePriority[interfaceID] = priority;
+
 								// Map the service ID and bsd name
 								setInterfaceToServiceMapping(deviceName, serviceID);
 
 								// Create the interface object
 								auto interface = Interface{};
-								auto const interfaceID = getStdString(deviceName);
 								interface.id = interfaceID;
 								interface.type = getInterfaceType(hardware);
 								interface.description = getStdString(description);

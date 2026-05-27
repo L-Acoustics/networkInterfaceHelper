@@ -4,6 +4,10 @@ All notable changes to the LA Network Interface Helper Library will be documente
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.2.10] - 2026-05-27
+### Fixed
+- On macOS, correctly resolve the user defined name (alias) when multiple services exist for the same interface by using the ServiceOrder priority.
+
 ## [1.2.9] - 2026-04-02
 ### Fixed
 - On macOS, correctly tracking changes to the user defined name of the interface.
