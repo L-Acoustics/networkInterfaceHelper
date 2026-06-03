@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - On macOS, correctly resolve the user defined name (alias) when multiple services exist for the same interface by using the ServiceOrder priority.
 
+### Changed
+- Moved from net8.0 to net10.0 framework
+
 ## [1.2.9] - 2026-04-02
 ### Fixed
 - On macOS, correctly tracking changes to the user defined name of the interface.
