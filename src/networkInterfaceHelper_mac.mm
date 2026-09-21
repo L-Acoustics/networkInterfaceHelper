@@ -347,6 +347,64 @@ private:
 		return ipInfos;
 	}
 
+	/** Returns true if the MAC address is the placeholder value returned by the kernel when the real address is redacted (02:00:00:00:00:00 or all zeros). */
+	static bool isRedactedMacAddress(MacAddress const& macAddress) noexcept
+	{
+		static constexpr auto RedactedMacAddress = MacAddress{ 0x02, 0x00, 0x00, 0x00, 0x00, 0x00 };
+		return macAddress == RedactedMacAddress || !NetworkInterfaceHelper::isMacAddressValid(macAddress);
+	}
+
+	/**
+	 * @brief Fills the MAC address of interfaces for which the kernel APIs returned a redacted value.
+	 * @details Starting with macOS 27, the kernel redacts the link-layer address of all interfaces for non-root processes (getifaddrs, sysctl and ioctl all return 02:00:00:00:00:00),
+	 *          the same privacy hardening iOS has since iOS 7. The real address is only returned to processes holding the com.apple.developer.networking.topology-observation entitlement.
+	 *          SystemConfiguration (used by the networksetup command line tool) still exposes the hardware address without any entitlement, so use it as a fallback.
+	 *          Virtual interfaces (eg. bridge) are not backed by a hardware controller and keep the redacted value.
+	 */
+	static void setRedactedMacAddressesFromSystemConfiguration(Interfaces& interfaces) noexcept
+	{
+		@autoreleasepool
+		{
+			auto const scInterfaces = RefGuard{ SCNetworkInterfaceCopyAll() };
+			if (!scInterfaces)
+			{
+				return;
+			}
+
+			auto const count = CFArrayGetCount(*scInterfaces);
+			for (auto index = CFIndex{ 0 }; index < count; ++index)
+			{
+				auto const scInterface = static_cast<SCNetworkInterfaceRef>(CFArrayGetValueAtIndex(*scInterfaces, index));
+				auto const* const bsdName = (__bridge NSString const*)SCNetworkInterfaceGetBSDName(scInterface);
+				if (bsdName == nullptr)
+				{
+					continue;
+				}
+
+				// Only process interfaces that have already been recorded and for which we still don't have a valid MAC address
+				auto const intfcIt = interfaces.find(getStdString(bsdName));
+				if (intfcIt == interfaces.end() || !isRedactedMacAddress(intfcIt->second.macAddress))
+				{
+					continue;
+				}
+
+				auto const* const hardwareAddress = (__bridge NSString const*)SCNetworkInterfaceGetHardwareAddressString(scInterface);
+				if (hardwareAddress == nullptr)
+				{
+					continue;
+				}
+				try
+				{
+					intfcIt->second.macAddress = NetworkInterfaceHelper::stringToMacAddress(getStdString(hardwareAddress));
+				}
+				catch (std::invalid_argument const&)
+				{
+					// Unexpected format, keep the redacted value
+				}
+			}
+		}
+	}
+
 	static void setOtherFieldsFromIOCTL(Interfaces& interfaces) noexcept
 	{
 		std::unique_ptr<struct ifaddrs, std::function<void(struct ifaddrs*)>> scopedIfa{ nullptr, [](struct ifaddrs* ptr)
@@ -533,6 +591,9 @@ private:
 
 				// Set other fields we couldn't retrieve
 				setOtherFieldsFromIOCTL(interfaces);
+
+				// Kernel APIs redact the MAC address for non-root processes starting with macOS 27, get it from SystemConfiguration instead
+				setRedactedMacAddressesFromSystemConfiguration(interfaces);
 
 				// Remove interfaces that are not complete
 				for (auto it = interfaces.begin(); it != interfaces.end(); /* Iterate inside the loop */)
