@@ -1,6 +1,3 @@
-[![Linux build & test](https://github.com/L-Acoustics/networkInterfaceHelper/actions/workflows/linux.yml/badge.svg)](https://github.com/L-Acoustics/networkInterfaceHelper/actions/workflows/linux.yml)
-[![Windows](https://github.com/L-Acoustics/networkInterfaceHelper/actions/workflows/windows.yml/badge.svg)](https://github.com/L-Acoustics/networkInterfaceHelper/actions/workflows/windows.yml)
-[![Macos](https://github.com/L-Acoustics/networkInterfaceHelper/actions/workflows/macos.yml/badge.svg)](https://github.com/L-Acoustics/networkInterfaceHelper/actions/workflows/macos.yml)
 # LA Network Interface Helper Library
 Copyright (C) 2016-2026, L-Acoustics
 
@@ -23,12 +20,12 @@ This software is licensed under the BSD 3-clause License (see [LICENSE](LICENSE)
 
 ### Windows
 - Windows 10
-- Visual Studio 2022 v17.6 or greater
+- Visual Studio 2022 v17.14 or greater
 - GitBash, cygwin or WSL
 
 ### macOS
-- macOS 10.13
-- Xcode 15
+- macOS 11
+- Xcode 26
 
 ### Linux
 - C++17 compliant compiler (minimum recommended g++ 11.2.0)
