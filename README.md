@@ -1,6 +1,3 @@
-[![Linux build & test](https://github.com/L-Acoustics/networkInterfaceHelper/actions/workflows/linux.yml/badge.svg)](https://github.com/L-Acoustics/networkInterfaceHelper/actions/workflows/linux.yml)
-[![Windows](https://github.com/L-Acoustics/networkInterfaceHelper/actions/workflows/windows.yml/badge.svg)](https://github.com/L-Acoustics/networkInterfaceHelper/actions/workflows/windows.yml)
-[![Macos](https://github.com/L-Acoustics/networkInterfaceHelper/actions/workflows/macos.yml/badge.svg)](https://github.com/L-Acoustics/networkInterfaceHelper/actions/workflows/macos.yml)
 # LA Network Interface Helper Library
 Copyright (C) 2016-2026, L-Acoustics
 
@@ -23,16 +20,25 @@ This software is licensed under the BSD 3-clause License (see [LICENSE](LICENSE)
 
 ### Windows
 - Windows 10
-- Visual Studio 2022 v17.6 or greater
+- Visual Studio 2022 v17.14 or greater
 - GitBash, cygwin or WSL
 
 ### macOS
-- macOS 10.13
-- Xcode 15
+- macOS 11
+- Xcode 26
 
 ### Linux
 - C++17 compliant compiler (minimum recommended g++ 11.2.0)
 - Make
+
+## Platform notes
+
+### macOS 27 and later
+Starting with macOS 27, the kernel redacts the link-layer (MAC) address of all network interfaces for non-root processes: *getifaddrs*, *sysctl* and *ioctl* all return *02:00:00:00:00:00* (the same privacy hardening that exists on iOS). This is a deliberate change by Apple, not a bug. The library transparently falls back to the SystemConfiguration framework (the same source used by the *networksetup* command line tool) to retrieve the hardware address of physical interfaces, so no change is required in applications using this library.
+
+Virtual interfaces that are not backed by a hardware controller (eg. *bridge0*) do not have a hardware address in SystemConfiguration and are reported with the redacted value.
+
+If your application needs the real link-layer address from the kernel APIs directly (for example to send raw Ethernet frames through BPF), it must hold the *com.apple.developer.networking.topology-observation* entitlement (available to all Apple developers by enabling the *Network Topology Observation* capability in Xcode 27). This is a restricted entitlement that must be authorized by a provisioning profile, which means command line tools have to be embedded in an app-like bundle (see Apple's *Signing a daemon with a restricted entitlement* documentation).
 
 ### Optional dependencies:
 * [Google's C++ test framework](https://github.com/google/googletest) to build unit tests

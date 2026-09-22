@@ -4,6 +4,13 @@ All notable changes to the LA Network Interface Helper Library will be documente
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.2.11] - 2026-09-22
+### Fixed
+- On macOS 27 and later, the MAC address of the interfaces was reported as 02:00:00:00:00:00 (kernel APIs now redact the link-layer address for non-root processes). It is now retrieved from SystemConfiguration when redacted.
+
+### Changed
+- Bumped minimum macOS version to 11 to accomodate the latest Xcode toolchain and SDKs.
+
 ## [1.2.10] - 2026-05-27
 ### Fixed
 - On macOS, correctly resolve the user defined name (alias) when multiple services exist for the same interface by using the ServiceOrder priority.
